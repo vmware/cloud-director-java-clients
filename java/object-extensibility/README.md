@@ -9,10 +9,6 @@ incorporating into new extension applications:
 * object-extensibility-vcd
 ..* a library for interacting with vCloud Director's REST API
 
-The following sample applications are also available:
-* object-extensibility-app
-..* the "Hello World" of extension apps asynchronously listens for messages and logs them, notification style
-
 # Getting Started
 
 ## Building

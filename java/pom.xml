@@ -18,7 +18,7 @@
   </organization>
   <modules>
     <module>vcd-api-client-java</module>
-    <!-- <module>object-extensibility-app</module> -->
+    <module>object-extensibility</module>
   </modules>
   <prerequisites>
     <maven>3.3.9</maven>

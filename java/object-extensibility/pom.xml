@@ -11,8 +11,8 @@
   <version>1.0.0</version>
   <parent>
     <groupId>com.vmware.vcloud</groupId>
-    <artifactId>vcd-ext-sdk</artifactId>
-    <version>1.0.0</version>
+    <artifactId>vcd-ext-sdk-parent</artifactId>
+    <version>0.11.0</version>
   </parent>
   <packaging>pom</packaging>
   <name>${project.artifactId} :: vCD Object Extensibility libraries</name>
@@ -20,7 +20,6 @@
   <modules>
     <module>object-extensibility-vcd</module>
     <module>object-extensibility-amqp</module>
-    <module>object-extensibility-app</module>
   </modules>
   <properties>
     <object-extensibility.version>1.0.0</object-extensibility.version>
