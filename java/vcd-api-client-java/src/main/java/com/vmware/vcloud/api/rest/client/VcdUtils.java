@@ -1,8 +1,9 @@
-/* **********************************************************************
+/* **********************************************************
  * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
+ * Copyright 2013-2021 VMware, Inc.
  * SPDX-License-Identifier: BSD-2-Clause
- * *********************************************************************/
+ * **********************************************************/
+
 package com.vmware.vcloud.api.rest.client;
 
 import java.net.URI;
@@ -11,7 +12,7 @@ import java.util.List;
 
 import javax.ws.rs.core.UriBuilder;
 
-import com.vmware.vcloud.api.rest.client.constants.RestConstants;
+import com.vmware.vcloud.api.rest.constants.RestConstants;
 import com.vmware.vcloud.api.rest.links.LinkRelation;
 import com.vmware.vcloud.api.rest.schema_v1_5.EntityType;
 import com.vmware.vcloud.api.rest.schema_v1_5.IdentifiableResourceType;
@@ -113,6 +114,22 @@ public class VcdUtils {
     }
 
     /**
+     * Returns the link of the specified type in the specified list of links
+     *
+     * @param link List of links
+     * @param mediaType The media type to look for
+     * @return the link, or null if no such link
+     */
+    public static LinkType findLink(List<LinkType> links, String mediaType) {
+        for (LinkType link : links) {
+            if (mediaType.equals(link.getType())) {
+                return link;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Returns all the links of the specified rel and type in the specified resource
      * @param resource the resource with the link
      * @param rel the rel of the desired link
@@ -142,7 +159,10 @@ public class VcdUtils {
      * Convenience method to turn a {@link ResourceType} into a {@link ReferenceType} to that resource.
      */
     public static ReferenceType makeRef(ResourceType resource) {
-        ReferenceType ref = new ReferenceType();
+        if (resource == null) {
+            return null;
+        }
+        final ReferenceType ref = new ReferenceType();
         ref.setHref(resource.getHref());
         ref.setType(resource.getType());
         return ref;
@@ -152,7 +172,10 @@ public class VcdUtils {
      * Convenience method to turn an {@link IdentifiableResourceType} into a {@link ReferenceType} to that resource.
      */
     public static ReferenceType makeRef(IdentifiableResourceType identifiableResource) {
-        ReferenceType ref = makeRef((ResourceType) identifiableResource);
+        final ReferenceType ref = makeRef((ResourceType) identifiableResource);
+        if (ref == null) {
+            return null;
+        }
         ref.setId(identifiableResource.getId());
         return ref;
     }
@@ -161,7 +184,10 @@ public class VcdUtils {
      * Convenience method to turn an {@link EntityType} into a {@link ReferenceType} to that entity.
      */
     public static ReferenceType makeRef(EntityType entity) {
-        ReferenceType ref = makeRef((IdentifiableResourceType) entity);
+        final ReferenceType ref = makeRef((IdentifiableResourceType) entity);
+        if (ref == null) {
+            return null;
+        }
         ref.setName(entity.getName());
         return ref;
     }
@@ -204,3 +230,4 @@ public class VcdUtils {
         return taskList.get(0);
     }
 }
+

@@ -1,12 +1,12 @@
-/* *
+/* **********************************************************
  * api-extension-template-vcloud-director
- * Copyright (c) 2017-2018 VMware, Inc. All Rights Reserved.
+ * Copyright (c) 2017-2021 VMware, Inc.
  * SPDX-License-Identifier: BSD-2-Clause
- * */
+ * **********************************************************/
 package com.vmware.vcloud.object.extensibility.vcd.support;
 
 import com.vmware.vcloud.api.rest.client.VcdClient;
-import com.vmware.vcloud.api.rest.client.constants.RelationType;
+import com.vmware.vcloud.api.rest.constants.RelationType;
 import com.vmware.vcloud.api.rest.schema_v1_5.extension.AmqpSettingsType;
 import com.vmware.vcloud.api.rest.schema_v1_5.extension.SystemSettingsType;
 import com.vmware.vcloud.object.extensibility.amqp.AmqpConnectionInfo;
@@ -53,3 +53,4 @@ public class AmqpSettingsManagerImpl implements AmqpSettingsManager {
         return String.format("%s.%s", amqpSettings.getAmqpPrefix(), NOTIFICATION_EXCHANGE_ROOT);
     }
 }
+
