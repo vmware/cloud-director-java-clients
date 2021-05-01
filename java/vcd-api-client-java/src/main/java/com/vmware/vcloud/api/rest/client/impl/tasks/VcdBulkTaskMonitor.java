@@ -1,8 +1,8 @@
-/* **********************************************************************
+/* **********************************************************
  * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
+ * Copyright 2016-2021 VMware, Inc.
  * SPDX-License-Identifier: BSD-2-Clause
- * *********************************************************************/
+ * **********************************************************/
 
 package com.vmware.vcloud.api.rest.client.impl.tasks;
 

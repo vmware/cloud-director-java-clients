@@ -1,21 +1,22 @@
-/* **************************************************************************
+/* **********************************************************
  * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
+ * Copyright 2011-2021 VMware, Inc.
  * SPDX-License-Identifier: BSD-2-Clause
- * **************************************************************************/
+ * **********************************************************/
 
 package com.vmware.vcloud.api.rest.client;
 
 
 import java.net.URI;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.cxf.jaxrs.client.Client;
+import java.util.UUID;
 
 import com.vmware.cxfrestclient.AbstractCxfRestClient;
 import com.vmware.cxfrestclient.CxfClientSecurityContext;
 import com.vmware.vcloud.api.rest.client.VcdClient.ClientRequestIdProvider;
-import com.vmware.vcloud.api.rest.client.constants.RestConstants;
+import com.vmware.vcloud.api.rest.constants.RestConstants;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.cxf.jaxrs.client.Client;
 
 /**
  * Base class for all clients that can interact with VCD
@@ -24,7 +25,8 @@ import com.vmware.vcloud.api.rest.client.constants.RestConstants;
  */
 abstract class AbstractVcdClientBase extends AbstractCxfRestClient {
 
-    private ClientRequestIdProvider clientRequestIdProvider;
+    private ClientRequestIdProvider clientRequestIdProvider =
+            () -> UUID.randomUUID().toString();
 
     protected AbstractVcdClientBase(URI endpoint) {
         super(endpoint);
@@ -56,7 +58,7 @@ abstract class AbstractVcdClientBase extends AbstractCxfRestClient {
     protected abstract String[] getAcceptHeaders();
 
     /**
-     * Get the value to be sent in the X-VMWARE-VCLOUD-ORG-ID header
+     * Get the value to be sent in the X-VMWARE-VCLOUD-TENANT-CONTEXT header
      */
     protected String getOrgContextHeader() {
         return null;
@@ -82,13 +84,10 @@ abstract class AbstractVcdClientBase extends AbstractCxfRestClient {
                 client.header(RestConstants.VCLOUD_CLIENT_REQUEST_ID_HEADER, clientRequestId);
             }
         }
-
-        if (getOrgContextHeader() != null) {
-            client.header(RestConstants.VCLOUD_ORG_CONTEXT_HEADER, getOrgContextHeader());
-        }
     }
 
     protected void setClientRequestIdProvider(ClientRequestIdProvider clientRequestIdGenerator) {
         this.clientRequestIdProvider = clientRequestIdGenerator;
     }
 }
+

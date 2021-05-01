@@ -1,16 +1,14 @@
-/* ******************************************************************************
+/* **********************************************************
  * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
+ * Copyright 2011 -2021 VMware, Inc.
  * SPDX-License-Identifier: BSD-2-Clause
- * ******************************************************************************/
+ * **********************************************************/
 package com.vmware.vcloud.api.rest.client;
 
 import java.util.List;
 
-import com.vmware.vcloud.api.rest.client.constants.RestConstants;
-import com.vmware.vcloud.api.rest.schema_v1_5.EntityType;
+import com.vmware.vcloud.api.rest.constants.RestConstants;
 import com.vmware.vcloud.api.rest.schema_v1_5.QueryResultRecordType;
-import com.vmware.vcloud.api.rest.schema_v1_5.ResourceType;
 
 /**
  * Form of result returned by a query.
@@ -37,7 +35,7 @@ public enum QueryResultFormat {
 
     /**
      * Return references only from the query. The return type of such a query will be a {@code List}
-     * of {@link EntityType} or {@link ResourceType} instances.
+     * of {@link Entity} or {@link ResourceType} instances.
      *
      * @since vCloud API 1.5.
      */

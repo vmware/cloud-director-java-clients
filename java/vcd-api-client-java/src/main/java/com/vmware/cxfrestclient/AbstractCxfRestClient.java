@@ -1,8 +1,8 @@
-/* ***************************************************************************
+/* **********************************************************
  * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
+ * Copyright 2011-2021 VMware, Inc.
  * SPDX-License-Identifier: BSD-2-Clause
- * **************************************************************************/
+ * **********************************************************/
 
 package com.vmware.cxfrestclient;
 
@@ -74,7 +74,7 @@ public abstract class AbstractCxfRestClient implements JaxRsClient {
         return endpoint;
     }
 
-    private boolean handleException(URI uri, WebApplicationException e, int failureCount) {
+    protected boolean handleException(URI uri, WebApplicationException e, int failureCount) {
         return
             errorHandler != null &&
             errorHandler.handleError(this, uri, e, failureCount) == Disposition.RETRY;
@@ -128,7 +128,7 @@ public abstract class AbstractCxfRestClient implements JaxRsClient {
         handleNoContentResponse(response);
     }
 
-    private void handleNoContentResponse(Response response) {
+    protected void handleNoContentResponse(Response response) {
         if (response.getStatus() != HttpURLConnection.HTTP_NO_CONTENT) {
             throw makeException(new WebApplicationException(response));
         }
@@ -168,16 +168,7 @@ public abstract class AbstractCxfRestClient implements JaxRsClient {
 
     @Override
     public <ContentsClass> Response postResource(URI uri, String type, JAXBElement<ContentsClass> contents) {
-        int failureCount = 0;
-        do {
-            try {
-                return createWebClient(uri, type).post(contents);
-            } catch (WebApplicationException e) {
-                if (! handleException(uri, e, ++failureCount)) {
-                    throw makeException(e);
-                }
-            }
-        } while (true);
+        return postResourceObject(uri, type, contents);
     }
 
     @Override
@@ -276,6 +267,19 @@ public abstract class AbstractCxfRestClient implements JaxRsClient {
         configureHttpRequestHeaders(WebClient.client(proxy));
     }
 
+    protected Response postResourceObject(URI uri, String type, Object contents) {
+        int failureCount = 0;
+        do {
+            try {
+                return createWebClient(uri, type).post(contents);
+            } catch (WebApplicationException e) {
+                if (! handleException(uri, e, ++failureCount)) {
+                    throw makeException(e);
+                }
+            }
+        } while (true);
+    }
+
     /**
      * Set the appropriate ssl context and https hostname verification for this client
      */
@@ -298,9 +302,15 @@ public abstract class AbstractCxfRestClient implements JaxRsClient {
         httpConduit.getClient().setAllowChunking(true);
     }
 
+    private void increaseHttpClientConnectionTimeout(ClientConfiguration config) {
+        HTTPConduit httpConduit = (HTTPConduit) config.getConduit();
+        httpConduit.getClient().setConnectionTimeout(90000);
+    }
+
     private void adjustConfiguration(ClientConfiguration config) {
         configureSSLTrustManager(config);
         addHttpChunking(config);
+        increaseHttpClientConnectionTimeout(config);
     }
 
     protected void configureClient(Object client) {
@@ -308,3 +318,4 @@ public abstract class AbstractCxfRestClient implements JaxRsClient {
         configureHttpRequestHeaders(client);
     }
 }
+
