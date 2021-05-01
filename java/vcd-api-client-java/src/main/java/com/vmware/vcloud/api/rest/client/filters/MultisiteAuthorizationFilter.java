@@ -1,14 +1,12 @@
-/* *********************************************************************
+/* **********************************************************
  * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
+ * Copyright 2017-2021 VMware, Inc.
  * SPDX-License-Identifier: BSD-2-Clause
- * *********************************************************************/
+ * **********************************************************/
 
 package com.vmware.vcloud.api.rest.client.filters;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.net.URI;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -38,41 +36,16 @@ public class MultisiteAuthorizationFilter implements ClientRequestFilter {
     public void filter(final ClientRequestContext requestContext) throws IOException {
 
         final String date = getDate();
-
         final String method = requestContext.getMethod();
-
         final URI requestUri = requestContext.getUri();
-
         final String path = requestUri.getPath();
-
-        final byte[] contentBytes = getContentBytes(requestContext);
+        final String contentType = requestContext.getHeaderString("Content-Type");
 
         final String authHeader =
-                credentials.createMultisiteAuthorizationHeader(date, method, path, contentBytes);
+                credentials.createMultisiteAuthorizationHeader(date, method, path, contentType);
         final MultivaluedMap<String, Object> headers = requestContext.getHeaders();
         headers.putSingle("Authorization", authHeader);
         headers.putSingle("Date", date);
-    }
-
-    /**
-     * Gets the content of the message.
-     *
-     * @param requestContext
-     *            {@link ClientRequestContext} to extract the content from
-     * @return A byte array of the content, or a byte array of length 0 if no content present
-     * @throws IOException
-     */
-    private byte[] getContentBytes(final ClientRequestContext requestContext) throws IOException {
-        final Object content = requestContext.getEntity();
-
-        if (content == null) {
-            return new byte[0];
-        }
-        try (final ByteArrayOutputStream b = new ByteArrayOutputStream();
-                final ObjectOutputStream o = new ObjectOutputStream(b)) {
-            o.writeObject(content);
-            return b.toByteArray();
-        }
     }
 
     /**
@@ -89,3 +62,4 @@ public class MultisiteAuthorizationFilter implements ClientRequestFilter {
     }
 
 }
+

@@ -1,8 +1,8 @@
-/* ***************************************************************************
+/* **********************************************************
  * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
+ * Copyright 2011-2021 VMware, Inc.
  * SPDX-License-Identifier: BSD-2-Clause
- * **************************************************************************/
+ * **********************************************************/
 
 package com.vmware.vcloud.api.rest.client;
 
@@ -16,13 +16,9 @@ import java.util.stream.Stream;
 import javax.ws.rs.core.Response;
 import javax.xml.bind.JAXBElement;
 
-import org.apache.cxf.jaxrs.client.Client;
-import org.apache.cxf.jaxrs.ext.search.SearchUtils;
-import org.apache.cxf.jaxrs.ext.search.client.SearchConditionBuilder;
-
 import com.vmware.cxfrestclient.CxfClientSecurityContext;
 import com.vmware.cxfrestclient.JaxRsClient;
-import com.vmware.vcloud.api.rest.client.constants.RelationType;
+import com.vmware.vcloud.api.rest.constants.RelationType;
 import com.vmware.vcloud.api.rest.schema.versioning.SupportedVersionsType;
 import com.vmware.vcloud.api.rest.schema_v1_5.AdminOrgType;
 import com.vmware.vcloud.api.rest.schema_v1_5.ApiExtensibilityType;
@@ -36,6 +32,10 @@ import com.vmware.vcloud.api.rest.schema_v1_5.ResourceType;
 import com.vmware.vcloud.api.rest.schema_v1_5.SessionType;
 import com.vmware.vcloud.api.rest.schema_v1_5.VCloudType;
 import com.vmware.vcloud.api.rest.schema_v1_5.extension.VMWExtensionType;
+
+import org.apache.cxf.jaxrs.client.Client;
+import org.apache.cxf.jaxrs.ext.search.SearchUtils;
+import org.apache.cxf.jaxrs.ext.search.client.SearchConditionBuilder;
 
 /**
  * A vCloud REST API client.  Extends {@link JaxRsClient} with behaviors specific to the vCloud REST API.
@@ -522,7 +522,7 @@ public interface VcdClient extends JaxRsClient {
     void setAuthenticationHeader(Client client);
 
     /**
-     * Sets the X-VMWARE-VCLOUD-ORG-ID header to the specified value
+     * Sets the X-VMWARE-VCLOUD-TENANT-CONTEXT header to the specified value
      */
     void setOrgContextHeader(String orgContext);
 
@@ -737,3 +737,4 @@ public interface VcdClient extends JaxRsClient {
     <QueryResultClass> Query<QueryResultClass> getPackagedQuery(String packagedQueryPath,
             Class<QueryResultClass> queryResultClass);
 }
+

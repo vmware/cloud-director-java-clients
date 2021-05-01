@@ -1,8 +1,8 @@
-/* **********************************************************************
+/* **********************************************************
  * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
+ * Copyright 2017-2021 VMware, Inc.
  * SPDX-License-Identifier: BSD-2-Clause
- * *********************************************************************/
+ * **********************************************************/
 
 package com.vmware.vcloud.api.rest.client;
 
@@ -25,6 +25,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
+import com.thoughtworks.xstream.security.AnyTypePermission;
 
 /**
  * JAX-RS's Provider to handle XStream in XML format.
@@ -36,6 +37,10 @@ public class XStreamXmlProvider implements MessageBodyReader<Object>, MessageBod
     private static final XStream xstream = new XStream();
     private static final String DEFAULT_ENCODING = "utf-8";
 
+    static {
+        XStream.setupDefaultSecurity(xstream);
+        xstream.addPermission(AnyTypePermission.ANY);
+    }
 
     @Override
     public boolean isReadable(Class<?> classType, Type genericType, Annotation[] annotations, javax.ws.rs.core.MediaType mediaType) {
@@ -87,3 +92,4 @@ public class XStreamXmlProvider implements MessageBodyReader<Object>, MessageBod
         return xstream;
     }
 }
+
