@@ -1,18 +1,13 @@
 <?xml version="1.0"?>
-<!--
- api-extension-template-vcloud-director
- Copyright 2018 VMware, Inc.
- SPDX-License-Identifier: BSD-2-Clause
--->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.vmware.vcloud</groupId>
   <artifactId>object-extensibility-parent</artifactId>
-  <version>1.0.0</version>
+  <version>10.3.0</version>
   <parent>
     <groupId>com.vmware.vcloud</groupId>
     <artifactId>vcd-ext-sdk-parent</artifactId>
-    <version>0.11.0</version>
+    <version>10.3.0</version>
   </parent>
   <packaging>pom</packaging>
   <name>${project.artifactId} :: vCD Object Extensibility libraries</name>
@@ -22,7 +17,7 @@
     <module>object-extensibility-amqp</module>
   </modules>
   <properties>
-    <object-extensibility.version>1.0.0</object-extensibility.version>
+    <object-extensibility.version>${product.version}</object-extensibility.version>
     <cxf.version>3.1.6</cxf.version>
     <guava.version>19.0</guava.version>
     <jackson-mapper.version>1.9.2</jackson-mapper.version>

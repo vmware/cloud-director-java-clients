@@ -1,14 +1,9 @@
 <?xml version="1.0"?>
-<!--
- api-extension-template-vcloud-director
- Copyright 2018 VMware, Inc.
- SPDX-License-Identifier: BSD-2-Clause
--->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.vmware.vcloud</groupId>
   <artifactId>vcd-ext-sdk-parent</artifactId>
-  <version>0.11.0</version>
+  <version>10.3.0</version>
   <packaging>pom</packaging>
   <name>${project.artifactId} :: vCloud Director Extension SDKs</name>
   <description>A collection of libraries for interacting with the extensibility features of vCloud Director.  Also includes some sample application that showcase best practices for extension building</description>
@@ -16,6 +11,7 @@
     <name>VMware</name>
     <url>http://www.vmware.com/</url>
   </organization>
+  <inceptionYear>2018</inceptionYear>
   <modules>
     <module>vcd-api-client-java</module>
     <module>object-extensibility</module>
@@ -26,7 +22,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <java.version>1.8</java.version>
-    <product.version>9.1.0</product.version>
+    <product.version>${version}</product.version>
   </properties>
   <licenses>
     <license>
@@ -124,6 +120,29 @@
       <plugin>
         <artifactId>maven-install-plugin</artifactId>
         <version>2.5</version>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <version>1.16</version>
+        <configuration>
+          <verbose>false</verbose>
+        </configuration>
+        <executions>
+          <execution>
+            <id>update-file-headers</id>
+            <goals>
+              <goal>update-file-header</goal>
+            </goals>
+            <phase>process-sources</phase>
+            <configuration>
+              <licenseName>bsd_2</licenseName>
+              <roots>
+                <root>src</root>
+              </roots>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
     <pluginManagement>

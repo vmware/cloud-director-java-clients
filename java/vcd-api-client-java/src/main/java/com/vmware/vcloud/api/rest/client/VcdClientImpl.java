@@ -1,57 +1,99 @@
-/* ***************************************************************************
- * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
- * SPDX-License-Identifier: BSD-2-Clause
- * **************************************************************************/
-
 package com.vmware.vcloud.api.rest.client;
 
+/*-
+ * #%L
+ * vcd-api-client-java :: vCloud Director REST Client
+ * %%
+ * Copyright (C) 2018 - 2021 VMware
+ * %%
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * #L%
+ */
+
+import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status.Family;
+import javax.ws.rs.core.Response.StatusType;
 import javax.ws.rs.core.UriBuilder;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
+import javax.xml.namespace.QName;
 
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.cxf.jaxrs.client.Client;
-import org.apache.cxf.jaxrs.client.WebClient;
-import org.apache.cxf.jaxrs.provider.JAXBElementProvider;
-import org.apache.cxf.jaxrs.provider.JAXBElementTypedProvider;
-
+import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler;
+import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
+import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.vmware.cxfrestclient.CxfClientSecurityContext;
-import com.vmware.vcloud.api.rest.client.constants.RelationType;
-import com.vmware.vcloud.api.rest.client.constants.RestAdminConstants;
-import com.vmware.vcloud.api.rest.client.constants.RestConstants;
-import com.vmware.vcloud.api.rest.client.constants.RestConstants.HttpStatusCodes;
+import com.vmware.vcloud.api.annotation.Supported;
+import com.vmware.vcloud.api.http.converters.JAXBElementMixIn;
+import com.vmware.vcloud.api.http.converters.QNameMixin;
+import com.vmware.vcloud.api.rest.client.filters.ClientVersionCompatibilityFilter;
 import com.vmware.vcloud.api.rest.client.filters.MultisiteAuthorizationFilter;
 import com.vmware.vcloud.api.rest.client.impl.EventViewerImpl;
 import com.vmware.vcloud.api.rest.client.impl.tasks.VcdTaskMonitorImpl;
+import com.vmware.vcloud.api.rest.constants.RelationType;
+import com.vmware.vcloud.api.rest.constants.RestAdminConstants;
+import com.vmware.vcloud.api.rest.constants.RestConstants;
+import com.vmware.vcloud.api.rest.constants.RestConstants.HttpStatusCodes;
+import com.vmware.vcloud.api.rest.jaxrs.typeresolvers.GlobalIdToJavaTypeResolver;
 import com.vmware.vcloud.api.rest.schema.versioning.SupportedVersionsType;
 import com.vmware.vcloud.api.rest.schema.versioning.VersionInfoType;
 import com.vmware.vcloud.api.rest.schema_v1_5.AdminOrgType;
@@ -75,23 +117,21 @@ import com.vmware.vcloud.api.rest.schema_v1_5.VCloudType;
 import com.vmware.vcloud.api.rest.schema_v1_5.extension.VMWExtensionType;
 import com.vmware.vcloud.api.rest.version.ApiVersion;
 
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.cxf.jaxrs.client.WebClient;
+import org.apache.cxf.jaxrs.provider.JAXBElementProvider;
+import org.apache.cxf.jaxrs.provider.JAXBElementTypedProvider;
+import org.apache.cxf.jaxrs.utils.HttpUtils;
+
 public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
 
-    private volatile String authenticationToken;
-    private volatile String jwtToken;
-    private volatile ClientCredentials clientCredentials;
-    private volatile MultivaluedMap<String, Object> responseHeaders;
-    private final Map<String, String> cookies = new LinkedHashMap<String, String>();
+    private static final String USER_AGENT = "vcd-client";
+
     private final VcdTaskMonitor taskMonitor = new VcdTaskMonitorImpl(this);
     private final EventViewer eventViewer = new EventViewerImpl(this);
     private Map<String, URI> queryListMap = null;
-
-    private static final String BEARER = "Bearer";
-
-    private final String apiVersion;
-    private boolean federateRequests = false;
-    private String orgContext;
-    private String orgSecurityContext;
+    private WireFormat wireFormat = WireFormat.XML;
 
     private URI sessionHref = null;
 
@@ -107,6 +147,9 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
             com.vmware.vcloud.api.rest.schema.ovf.ObjectFactory.class,
             com.vmware.vcloud.api.rest.schema.ovf.environment.ObjectFactory.class
     };
+
+    // TODO: Remove once v35 is no longer supported, see VTEN-3875
+    private Boolean isZeusOrAbove;
 
     /**
      * Implementation of {@link SessionToken} to represent a current session with vCD. It can be retrieved
@@ -170,31 +213,89 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
 
     private final static List<?> PROVIDER_LIST = createJAXBElementProviderFromObjectFactories();
 
+    private static final List<Object> JSON_PROVIDERS_LIST = createJsonJaxbProviders();
+
     /**
      * Creates a {@link JAXBElementProvider} that will return {@link JAXBContext}s that handle all
      * the JAXB-generated types using object factories supplied to this method.
      */
     protected static List<JAXBElementProvider<?>> createJAXBElementProviderFromObjectFactories() {
-        List<JAXBElementProvider<?>> list = new ArrayList<JAXBElementProvider<?>>();
+        List<JAXBElementProvider<?>> list = new ArrayList<>();
 
         JAXBElementTypedProvider jaxbProvider = new JAXBElementTypedProvider();
         jaxbProvider.setExtraClass(OBJECT_FACTORIES);
         list.add(jaxbProvider);
 
-        JAXBElementProvider<Object> objProvider = new JAXBElementProvider<Object>();
+        JAXBElementProvider<Object> objProvider = new JAXBElementProvider<>();
         objProvider.setExtraClass(OBJECT_FACTORIES);
         list.add(objProvider);
 
         return list;
     }
 
+    protected static List<Object> createJsonJaxbProviders() {
+        final ObjectMapper jaxbObjectMapper = new ObjectMapper()
+                .addMixIn(JAXBElement.class, JAXBElementMixIn.class)
+                .addMixIn(QName.class, QNameMixin.class)
+                .setDateFormat(DATE_FORMAT)
+                .enable(SerializationFeature.INDENT_OUTPUT);
+
+        configureObjectMapper(jaxbObjectMapper);
+
+        final JacksonJsonProvider vCloudJsonJaxrsProvider =
+                new JacksonJsonProvider(jaxbObjectMapper);
+
+        return Collections.singletonList(vCloudJsonJaxrsProvider);
+    }
+
+    private static void configureObjectMapper(final ObjectMapper jaxbObjectMapper) {
+        final GlobalIdToJavaTypeResolver typeResolver = constructTypeResolver(jaxbObjectMapper);
+        final SimpleFilterProvider filterProvider = new SimpleFilterProvider();
+        filterProvider.addFilter(Supported.VCLOUD_LEGACY_FILTER_PARAM,
+                new VcloudBeanPropertyFilter());
+        jaxbObjectMapper.setFilterProvider(filterProvider);
+        final StdTypeResolverBuilder typeResolverBuilder =
+                new ObjectMapper.DefaultTypeResolverBuilder(DefaultTyping.JAVA_LANG_OBJECT)
+                        .init(Id.NAME, typeResolver)
+                        .inclusion(As.PROPERTY).typeProperty("_type");
+
+        jaxbObjectMapper.setDefaultTyping(typeResolverBuilder);
+
+        jaxbObjectMapper.addHandler(new DeserializationProblemHandler() {
+            @Override
+            public JavaType handleUnknownTypeId(DeserializationContext ctxt, JavaType baseType,
+                    String subTypeId, TypeIdResolver idResolver, String failureMsg)
+                    throws IOException {
+                return typeResolver.getJavaTypeForId(ctxt, subTypeId);
+            }
+        });
+    }
+
+    private static GlobalIdToJavaTypeResolver constructTypeResolver(
+            final ObjectMapper jaxbObjectMapper) {
+        final List<String> packages = Arrays.asList("com.vmware.vcloud.api.rest.schema_v1_5",
+                "com.vmware.vcloud.api.rest.schema.ovf",
+                "com.vmware.vcloud.api.rest.schema.ovf.environment",
+                "com.vmware.vcloud.api.rest.schema.ovf.vmware",
+                "com.vmware.vcloud.api.rest.schema_v1_5.extension");
+        final Class<? extends Annotation> schemaAnnotation =
+                com.fasterxml.jackson.annotation.JsonFilter.class;
+
+        final Class<?> schemaClass = com.vmware.vcloud.api.rest.schema_v1_5.VCloudType.class;
+
+        return new GlobalIdToJavaTypeResolver(packages, schemaAnnotation, schemaClass,
+                jaxbObjectMapper);
+    }
+
     @Override
     protected List<?> getCxfProviders() {
-        final List<Object> providers = PROVIDER_LIST.stream().collect(Collectors.toList());
-        if (clientCredentials instanceof VcdMultisiteLoginCredentials) {
+        final List<Object> providers = new LinkedList<>(PROVIDER_LIST);
+        providers.addAll(JSON_PROVIDERS_LIST);
+        if (getCredentials() instanceof VcdMultisiteLoginCredentials) {
             providers.add(new MultisiteAuthorizationFilter(
-                    (VcdMultisiteLoginCredentials) clientCredentials));
+                    (VcdMultisiteLoginCredentials) getCredentials()));
         }
+        providers.add(new ClientVersionCompatibilityFilter());
         return providers;
     }
 
@@ -202,8 +303,7 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
      * Creates an instance of VcdClientImpl with given endpoint, API version and cxfClientSecurityContext.
      */
     public VcdClientImpl(final URI endpoint, final String apiVersion, final CxfClientSecurityContext cxfClientSecurityContext) {
-        super(endpoint, cxfClientSecurityContext);
-        this.apiVersion = apiVersion;
+        super(endpoint, cxfClientSecurityContext, apiVersion, USER_AGENT);
     }
 
     /**
@@ -220,33 +320,12 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
      */
     public VcdClientImpl(final URI endpoint, final List<ApiVersion> candidateVersions,
             final CxfClientSecurityContext cxfClientSecurityContext) {
-        super(endpoint, cxfClientSecurityContext);
-
-        final SupportedVersionsType supportedVersions = getVersions();
-
-        final Set<String> cloudSupportedApiVersions = new HashSet<>();
-
-        for (final VersionInfoType versionType : supportedVersions.getVersionInfo()) {
-            cloudSupportedApiVersions.add(versionType.getVersion());
-        }
-
-        for (final ApiVersion candidateVersion : candidateVersions) {
-            if (cloudSupportedApiVersions.contains(candidateVersion.value())) {
-                apiVersion = candidateVersion.value();
-                return;
-            }
-        }
-
-        throw new RuntimeException(
-                "No preferred API Version is supported by cloud. Preferred versions: "
-                        + candidateVersions.toString() + "; vCD supported versions:"
-                        + cloudSupportedApiVersions.toString() + "; Cloud URL:" + endpoint);
-
+        super(endpoint, cxfClientSecurityContext,
+                VcdClientImpl.getApiVersion(candidateVersions, endpoint, cxfClientSecurityContext), USER_AGENT);
     }
 
     private VcdClientImpl(VcdClientImpl vcdClient) {
-        super(vcdClient);
-        this.apiVersion = vcdClient.apiVersion;
+        super(vcdClient, vcdClient.getClientApiVersion(), USER_AGENT);
     }
 
     private URI getEndpoint(WellKnownEndpoint endpoint) {
@@ -256,10 +335,19 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
     /**
      * Gets the openApi endpoint.
      */
-    protected URI getOpenApiEndpoint() {
-        UriBuilder builder = UriBuilder.fromUri(this.getEndpoint()).replacePath("cloudapi");
-        final URI openApiEndPoint = builder.build();
-        return openApiEndPoint;
+    public URI getOpenApiEndpoint() {
+        return Optional.ofNullable(getEndpoint(WellKnownEndpoint.OPENAPI))
+                .orElseGet(() -> {
+                    final URI openApiEndPoint = UriBuilder.fromUri(this.getEndpoint()).replacePath("cloudapi").build();
+                    return openApiEndPoint;
+        });
+    }
+
+    /**
+     * Gets the openApi endpoint.
+     */
+    protected URI getNetworkApiEndpoint() {
+        return sessionEndpoints.get(WellKnownEndpoint.NETWORK);
     }
 
     @Override
@@ -282,15 +370,21 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
     }
 
     @Override
+    public void setWireFormat(WireFormat wireFormat) {
+        this.wireFormat = wireFormat;
+    }
+
+    @Override
     public SupportedVersionsType getVersions() {
         return getResource(UriBuilder.fromUri(endpoint).path(RestConstants.Uri.VERSIONS).build(),
                 SupportedVersionsType.class);
     }
 
-    @Override
-    public String getClientApiVersion() {
-        return apiVersion;
+    public SupportedVersionsType getVersions(final URI endpoint) {
+        return getResource(UriBuilder.fromUri(endpoint).path(RestConstants.Uri.VERSIONS).build(),
+                SupportedVersionsType.class);
     }
+
 
     private <ResponseClass> ResponseClass getResource(WellKnownEndpoint endpoint, Class<ResponseClass> resourceClass) {
         return getResource(validateEndpoint(endpoint), resourceClass);
@@ -347,7 +441,11 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
         }
     }
 
+    /*
+     * @deprecated Use {@link com.vmware.vcloud.api.rest.client.RestClientFactory#createOpenApiClient(VcdClientImpl)}
+     */
     @Override
+    @Deprecated
     public OpenApiClient getOpenApiClient() {
         return new OpenApiClientImpl(this);
     }
@@ -398,62 +496,17 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
 
     @Override
     protected String[] getAcceptHeaders() {
-        StringBuffer acceptHeader = new StringBuffer("application/*+xml");
+        StringBuffer acceptHeader = new StringBuffer("application/*+" + wireFormat.toString());
 
-        if (apiVersion != null) {
+        if (getClientApiVersion() != null) {
             acceptHeader.append(";" + RestConstants.API_VERSION_ATTR);
-            acceptHeader.append(apiVersion);
+            acceptHeader.append(getClientApiVersion());
         }
-        if (federateRequests) {
-            acceptHeader.append(";" + RestConstants.MULTISITE_ATTR + "global");
+        if (StringUtils.isNotBlank(getMultisiteLocations())) {
+            acceptHeader.append(MessageFormat.format(MULTISITE_ACCEPT_HEADER_FORMAT, getMultisiteLocations()));
         }
         final String accept = acceptHeader.toString();
         return new String[] { accept };
-    }
-
-    @Override
-    public void setAuthenticationHeader(final Client client) {
-        if (jwtToken != null) {
-            client.header("Authorization", BEARER + " " + jwtToken);
-            if (orgSecurityContext != null) {
-                client.header(RestConstants.VCLOUD_AUTH_CONTEXT_HEADER, orgSecurityContext);
-            }
-        } else if (hasSessionlessClientCredentials()) {
-            client.header(clientCredentials.getHeaderName(), clientCredentials.getHeaderValue());
-        } else if (authenticationToken != null) {
-            client.header(RestConstants.VCLOUD_AUTHENTICATION_HEADER, authenticationToken);
-        }
-    }
-
-    @Override
-    protected void setAuthenticationHeaders(final Client client) {
-        setAuthenticationHeader(client);
-        if (cookies.containsKey(RestConstants.JWT_COOKIE_NAME)) {
-            addCookie(RestConstants.JWT_COOKIE_NAME, client);
-        }
-
-        if (cookies.containsKey(RestConstants.SESSION_COOKIE_NAME)) {
-            addCookie(RestConstants.SESSION_COOKIE_NAME, client);
-        } else if (cookies.containsKey(RestConstants.VCLOUD_COOKIE_NAME)) {
-            addCookie(RestConstants.VCLOUD_COOKIE_NAME, client);
-        }
-    }
-
-    private void addCookie(final String cookieName, final Client client) {
-        final String rawCookie = cookies.get(cookieName);
-        final String cookieValue = rawCookie.substring(rawCookie.indexOf("=") + 1);
-        final Cookie cookie = new Cookie(cookieName, cookieValue);
-        client.cookie(cookie);
-    }
-
-    @Override
-    public String getOrgContextHeader() {
-        return orgContext;
-    }
-
-    @Override
-    public void setOrgContextHeader(String orgContext) {
-        this.orgContext = orgContext;
     }
 
     @Override
@@ -463,18 +516,18 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
 
     @Override
     public void relogin() {
-        if (this.clientCredentials == null) {
+        if (getCredentials() == null) {
             throw new RuntimeException("Expected client credentials to not be null");
         }
-        dologinInternal(this.clientCredentials);
+        dologinInternal(getCredentials());
     }
 
     @Override
     public void loginWithJwt(final String jwt, final String orgSecurityContext) {
-        this.orgSecurityContext = orgSecurityContext;
+        setAuthContextHeader(orgSecurityContext);
 
-        clientCredentials = null;
-        jwtToken = jwt;
+        setCredentialsInternal(null);
+        setJwtToken(jwt);
 
         doInitClient();
     }
@@ -489,10 +542,10 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
             throw new AssertionError("Invalid session token.");
         }
         final SessionTokenImpl sessionTokenImpl = (SessionTokenImpl) sessionToken;
-        this.authenticationToken = sessionTokenImpl.getAuthenticationToken();
+        setAuthenticationToken(sessionTokenImpl.getAuthenticationToken());
         final String vCloudTokenCookie = sessionTokenImpl.getVCloudToken();
         if (vCloudTokenCookie != null) {
-            this.cookies.put(RestConstants.VCLOUD_COOKIE_NAME, vCloudTokenCookie);
+            getCookies().put(RestConstants.VCLOUD_COOKIE_NAME, vCloudTokenCookie);
         }
 
         doInitClient();
@@ -521,14 +574,13 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
         checkResponse(response, HttpURLConnection.HTTP_OK);
 
         SessionType session = response.readEntity(SessionType.class);
-        responseHeaders = response.getMetadata();
 
         // Processing the headers is only necessary after the login, because if the session
         // is being reused, the authentication token and vcloud token have already been set.
         // In the case of a login (new session) we need to process the headers and reconfigure
         // the client's headers, as the auth token and vcloud token have been retrieved.
-        if (isLogin && !hasSessionlessClientCredentials()) {
-            processHeaders();
+        if (isLogin) {
+            processHeaders(response.getMetadata());
             configureHttpRequestHeaders(client);
         }
 
@@ -536,80 +588,17 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
         sessionEndpoints = WellKnownEndpoint.getSessionEndpoints(session);
     }
 
-    /**
-     * Checks HTTP status in the specified response.
-     *
-     * @param response HTTP response to check
-     * @param expectedStatus Expected HTTP status
-     * @throws {@link VcdErrorResponseException} if HTTP status doesn't match {@code expectedStatus}
-     */
-    private void checkResponse(final Response response, final int expectedStatus) {
-        if (response.getStatus() == expectedStatus) {
-            return;
-        }
-
-        final int responseStatus = response.getStatus();
-
-        ErrorType error = null;
-        if (responseStatus != HttpURLConnection.HTTP_UNAUTHORIZED) {
-
-            try {
-                // readEntity fails in scenarios where the response is not of ErrorType
-                // for example HTTP Error 301
-                error = response.readEntity(ErrorType.class);
-            } catch (final Exception e) {
-                // ignore
-            }
-        }
-
-        final String requestId = getRequestId(response);
-
-        throw new VcdErrorResponseException(responseStatus, requestId, error, null);
-    }
-
-    private String getRequestId(final Response response) {
-        final String requestId =
-                response.getHeaderString(RestConstants.VCLOUD_REQUEST_ID_HEADER);
-        return requestId;
-    }
 
     @Override
     public SessionToken getSessionToken() {
-        if (authenticationToken != null) {
-            return new SessionTokenImpl(authenticationToken,
-                    cookies.get(RestConstants.VCLOUD_COOKIE_NAME));
+        if (getAuthenticationToken() != null) {
+            return new SessionTokenImpl(getAuthenticationToken(),
+                    getCookies().get(RestConstants.VCLOUD_COOKIE_NAME));
         }
         return null;
     }
 
-    @Override
-    public String getJwtToken() {
-        return jwtToken;
-    }
 
-    private void processHeaders() {
-        authenticationToken = (String) responseHeaders.getFirst(RestConstants.VCLOUD_AUTHENTICATION_HEADER);
-        if (authenticationToken == null) {
-            throw new RuntimeException("The login response is missing a " +  RestConstants.VCLOUD_AUTHENTICATION_HEADER + " cookie");
-        }
-
-        final String accessToken =
-                (String) responseHeaders.getFirst(RestConstants.VCLOUD_ACCESS_TOKEN_HEADER);
-        if (accessToken != null) {
-            jwtToken = accessToken;
-        }
-
-        final List<Object> rawCookies = responseHeaders.get("Set-Cookie");
-        if (rawCookies == null) {
-            return;
-        }
-
-        for (Object o : rawCookies) {
-            final String rawCookie = (String) o;
-            final String name = rawCookie.substring(0, rawCookie.indexOf("="));
-            cookies.put(name, rawCookie);
-        }
-    }
 
     private enum WellKnownEndpoint {
         // Endpoints that are always present when VCD is not in maintenance mode:
@@ -623,6 +612,7 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
         API_EXTENSIBILITY(RelationType.API_EXTENSIBILITY, RestConstants.MediaType.API_EXTENSIBILITY),
         EXTENSION(RelationType.DOWN, RestConstants.MediaType.VMW_EXTENSION),
         OPENAPI(RelationType.OPENAPI, RestConstants.MediaType.APPLICATION_JSON),
+        NETWORK(RelationType.NSX, MediaType.APPLICATION_XML),
         ;
 
         private final String mediaType;
@@ -634,7 +624,7 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
         }
 
         static Map<WellKnownEndpoint, URI> getSessionEndpoints(SessionType session) {
-            Map<WellKnownEndpoint, URI> map = new HashMap<WellKnownEndpoint, URI>();
+            Map<WellKnownEndpoint, URI> map = new HashMap<>();
             for (WellKnownEndpoint endpoint : WellKnownEndpoint.values()) {
                 LinkType link = VcdUtils.findLink(session, endpoint.rel, endpoint.mediaType, false);
                 if (link != null) {
@@ -688,22 +678,21 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
     public VcdClient duplicate(boolean newSession) throws VcdErrorException {
         VcdClientImpl duplicateClient = new VcdClientImpl(this);
         if (newSession) {
-            duplicateClient.setCredentials(clientCredentials);
-        } else if (jwtToken != null) {
-            duplicateClient.loginWithJwt(jwtToken, orgSecurityContext);
+            duplicateClient.setCredentials(getCredentials());
+        } else if (getJwtToken() != null) {
+            duplicateClient.loginWithJwt(getJwtToken(), getAuthContextHeader());
         } else {
             duplicateClient.loginWithToken(getSessionToken());
         }
         return duplicateClient;
     }
 
-    private void clearSessionData() {
-        cookies.clear();
+    @Override
+    protected void clearSessionData() {
+        super.clearSessionData();
         sessionEndpoints = null;
         loggedInAdminOrgEndpoint = null;
-        authenticationToken = null;
         sessionHref = null;
-        jwtToken = null;
     }
 
     @Override
@@ -723,7 +712,7 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
     @Override
     public Response getServerStatus() {
         final WebClient webClient = createWebClient(UriBuilder.fromUri(endpoint).path("server_status").build());
-        webClient.accept("*/*");
+        webClient.replaceHeader(HttpHeaders.ACCEPT, "*/*");
         return webClient.get();
     }
 
@@ -825,6 +814,7 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
     }
 
     private <ContentsClass, ResponseClass> ResponseClass putResource(String href, String mediaType, JAXBElement<ContentsClass> contents, Class<ResponseClass> responseClass) throws VcdErrorException {
+        mediaType = ObjectUtils.firstNonNull(wireFormat.switchMediaType(mediaType));
         return super.putResource(URI.create(href), mediaType, contents, responseClass);
     }
 
@@ -840,13 +830,19 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
     }
 
     private <ContentsClass, ResponseClass> ResponseClass postResource(String href, String mediaType, JAXBElement<ContentsClass> contents, Class<ResponseClass> responseClass) throws VcdErrorException {
+        mediaType = ObjectUtils.firstNonNull(wireFormat.switchMediaType(mediaType));
         return super.postResource(URI.create(href), mediaType, contents, responseClass);
     }
 
     @Override
     protected VcdErrorException makeException(WebApplicationException webApplicationException) {
         final Response response = webApplicationException.getResponse();
-        final int responseStatus = response.getStatus();
+        return parseException(response, webApplicationException);
+    }
+
+    private VcdErrorException parseException(final Response response, WebApplicationException webApplicationException) {
+        final StatusType statusInfo = response.getStatusInfo();
+        final int responseStatus = statusInfo.getStatusCode();
         try {
             final String requestId = getRequestId(response);
             final String contentType = response.getHeaderString(HttpHeaders.CONTENT_TYPE);
@@ -857,6 +853,11 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
                     || StringUtils.contains(contentType, MediaType.TEXT_XML)) {
                 final String errorMsg = response.readEntity(String.class);
                 return new VcdErrorResponseException(responseStatus, requestId, errorMsg, webApplicationException);
+            } else if (response.getLength() <= 0
+                        &&  webApplicationException != null
+                        && (statusInfo.getFamily().equals(Family.CLIENT_ERROR)
+                                || statusInfo.getFamily().equals(Family.SERVER_ERROR))) {
+                return new VcdErrorResponseException(responseStatus, requestId, (ErrorType)null, webApplicationException);
             }
             return new VcdErrorResponseProcessingException(responseStatus, null, webApplicationException);
 
@@ -933,18 +934,13 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
     }
 
     @Override
-    public void setMultisiteRequests(boolean federateRequests) {
-        this.federateRequests = federateRequests;
-    }
-
-    @Override
-    public void setClientRequestIdProvider(ClientRequestIdProvider clientRequestIdGenerator) {
+    public void setClientRequestIdProvider(Supplier<String> clientRequestIdGenerator) {
         super.setClientRequestIdProvider(clientRequestIdGenerator);
     }
 
-    private Map<String, URI> getQueryListMap() {
+    private synchronized Map<String, URI> getQueryListMap() {
         if (queryListMap == null) {
-            queryListMap = new HashMap<String, URI>();
+            queryListMap = new HashMap<>();
             for (final LinkType link : getQueryList().getLink()) {
                 final String queryListKey = makeQueryListMapKey(link.getType(), link.getName());
                 queryListMap.put(queryListKey, URI.create(link.getHref()));
@@ -952,6 +948,17 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
         }
 
         return queryListMap;
+    }
+
+
+    @Override
+    public void setCredentials(ClientCredentials credentials) {
+        setCredentialsInternal(credentials);
+        if (credentials.supportsSessionless()) {
+            doInitClient();
+        } else {
+            dologinInternal(credentials);
+        }
     }
 
     private final class QueryResultPageIterator<T> implements ListIterator<QueryListPage<T>> {
@@ -1045,7 +1052,7 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
                 Class<QueryResultClass> queryResultClass) {
 
             final List<QueryResultClass> queryResultRecordList =
-                    new ArrayList<QueryResultClass>();
+                    new ArrayList<>();
 
             for (JAXBElement<? extends QueryResultRecordType> element : queryResultRecordsType
                     .getRecord()) {
@@ -1054,24 +1061,23 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
                 queryResultRecordList.add(queryResultClass.cast(queryResultRecord));
             }
 
-            return new QueryListPage<QueryResultClass>(queryResultRecordList,
+            return new QueryListPage<>(queryResultRecordList,
                     queryResultRecordsType.getTotal());
         }
 
         private <QueryResultClass> QueryListPage<QueryResultClass> extractQueryResults(
                 ReferencesType referencesType, Class<QueryResultClass> queryResultClass) {
             final List<QueryResultClass> referenceList =
-                    new ArrayList<QueryResultClass>();
+                    new ArrayList<>();
 
             for (JAXBElement<ReferenceType> ref : referencesType.getReference()) {
-                @SuppressWarnings("unchecked")
                 final QueryResultClass referenceType = (QueryResultClass) ref.getValue();
 
                 assert referencesType != null : "Reference present but value is null";
                 referenceList.add(referenceType);
             }
 
-            return new QueryListPage<QueryResultClass>(referenceList,
+            return new QueryListPage<>(referenceList,
                     referencesType.getTotal());
         }
 
@@ -1221,17 +1227,19 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
             final URI queryUri =
                     buildQueryUri(findQueryUri(queryResultFormat), page, pageSize,
                             filter, includeLinks);
+
+
             if (QueryResultRecordType.class.isAssignableFrom(queryResultClass)) {
                 final QueryResultRecordsType queryResultRecordsType =
                         getResource(queryUri, QueryResultRecordsType.class);
-                return new QueryResultPageIterator<QueryResultClass>(
+                return new QueryResultPageIterator<>(
                         queryResultRecordsType, queryResultClass);
             }
 
             if (ReferenceType.class.isAssignableFrom(queryResultClass)) {
                 final ReferencesType referencesType =
                         getResource(queryUri, ReferencesType.class);
-                return new QueryResultPageIterator<QueryResultClass>(referencesType,
+                return new QueryResultPageIterator<>(referencesType,
                         queryResultClass);
             }
 
@@ -1247,15 +1255,21 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
 
         abstract protected URI findQueryUri(final QueryResultFormat format);
 
-        private URI buildQueryUri(final URI baseQueryHref, final int page,
-                final int pageSize, final String filter, final boolean includeLinks) {
+        private URI buildQueryUri(final URI baseQueryHref, final int page, final int pageSize,
+                final String filter, final boolean includeLinks) {
             final UriBuilder builder = UriBuilder.fromUri(baseQueryHref);
+            // AtomicInteger for use in lambda
             final AtomicInteger index = new AtomicInteger(0);
             final Map<String, Object> paramArgs = new HashMap<>();
 
             final Function<Object, String> wrapArgInTemplate = argValue -> {
                 final String arg = String.format("arg%d", index.getAndIncrement());
-                paramArgs.put(arg, ObjectUtils.defaultIfNull(argValue, "").toString().replaceAll("\\+", "%2B"));
+                if (isZeusOrAbove()) {
+                    paramArgs.put(arg, argValue);
+                } else {
+                    paramArgs.put(arg, ObjectUtils.defaultIfNull(argValue, "").toString()
+                            .replaceAll("\\+", "%2B"));
+                }
                 return String.format("{%s}", arg);
             };
 
@@ -1266,13 +1280,18 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
             }
 
             if (!StringUtils.isEmpty(fields)) {
-                builder.queryParam(RestConstants.QueryParams.FIELDS, wrapArgInTemplate.apply(fields));
+                builder.queryParam(RestConstants.QueryParams.FIELDS,
+                        wrapArgInTemplate.apply(fields));
             }
 
+            boolean isPartiallyEncoded = false;
             if (!StringUtils.isEmpty(filter)) {
-                // filterEncoded=true allows VCD to properly parse encoded '==' in the filter parameter.
-                builder.queryParam("filterEncoded", wrapArgInTemplate.apply(true));
-                builder.queryParam(RestConstants.QueryParams.FILTER, wrapArgInTemplate.apply(filter));
+                isPartiallyEncoded = HttpUtils.isPartiallyEncoded(filter);
+                if (!isZeusOrAbove()) {
+                    builder.queryParam("filterEncoded", wrapArgInTemplate.apply(true));
+                }
+                builder.queryParam(RestConstants.QueryParams.FILTER,
+                        wrapArgInTemplate.apply(filter));
             }
 
             if (!StringUtils.isEmpty(sortAsc)) {
@@ -1287,7 +1306,10 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
                 builder.queryParam("sortDesc", wrapArgInTemplate.apply(sortDesc));
             }
 
-            return builder.buildFromMap(paramArgs);
+            return isPartiallyEncoded
+                    && isZeusOrAbove()
+                    ? builder.buildFromEncodedMap(paramArgs)
+                    : builder.buildFromMap(paramArgs);
         }
 
         @Override
@@ -1315,7 +1337,7 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
 
     @Override
     public <QueryResultClass> Query<QueryResultClass> getQuery(String queryTypeName, Class<QueryResultClass> queryResultClass) {
-        return new TypedQuery<QueryResultClass>(queryTypeName, queryResultClass);
+        return new TypedQuery<>(queryTypeName, queryResultClass);
     }
 
     private final class PackagedQuery<QueryResultClass> extends AbstractQuery<QueryResultClass> {
@@ -1336,33 +1358,11 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
 
     @Override
     public <QueryResultClass> Query<QueryResultClass> getPackagedQuery(String queryPath, Class<QueryResultClass> queryResultClass) {
-        return new PackagedQuery<QueryResultClass>(queryPath, queryResultClass);
-    }
-
-    private boolean hasSessionlessClientCredentials() {
-        return clientCredentials != null && clientCredentials.supportsSessionless();
+        return new PackagedQuery<>(queryPath, queryResultClass);
     }
 
     @Override
-    public void setCredentials(ClientCredentials credentials) {
-        setCredentialsInternal(credentials);
-        if (credentials.supportsSessionless()) {
-            doInitClient();
-        } else {
-            dologinInternal(credentials);
-        }
-    }
-
-    ClientCredentials getCredentials() {
-        return clientCredentials;
-    }
-
-    private void setCredentialsInternal(ClientCredentials credentials) {
-        this.clientCredentials = credentials;
-        this.jwtToken = null;
-    }
-
-    private void dologinInternal(ClientCredentials credentials) {
+    protected void dologinInternal(ClientCredentials credentials) {
         setCredentialsInternal(credentials);
         WebClient client =
                 createWebClient(UriBuilder.fromUri(endpoint).path(RestConstants.Uri.SESSIONS)
@@ -1373,7 +1373,8 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
         initializeWithSession(client, true); /*is login*/
     }
 
-    private void doInitClient() {
+    @Override
+    protected void doInitClient() {
         // Construct a web client to retrieve a session based on ClientCredentials or authentication token
         WebClient client =
                 createWebClient(UriBuilder.fromUri(endpoint).path(RestConstants.Uri.SESSION)
@@ -1382,4 +1383,88 @@ public class VcdClientImpl extends AbstractVcdClientBase implements VcdClient {
         // Initialize this client using the existing session
         initializeWithSession(client, false /*do not login*/);
     }
+
+    @Override
+    protected void processHeaders(final MultivaluedMap<String, Object> responseHeaders) {
+        setAuthenticationToken(
+                (String) responseHeaders.getFirst(RestConstants.VCLOUD_AUTHENTICATION_HEADER));
+        if (getAuthenticationToken() == null) {
+            throw new RuntimeException("The login response is missing a "
+                    + RestConstants.VCLOUD_AUTHENTICATION_HEADER + " cookie");
+        }
+        super.processHeaders(responseHeaders);
+    }
+
+    private static String getApiVersion(final List<ApiVersion> candidateVersions,
+            final URI endpoint,
+            final CxfClientSecurityContext cxfClientSecurityContext) {
+        final String minApiVersion = ApiVersion.Alias.MIN_SUPPORTED.getMapping().value();
+        final VcdClientImpl minClient =
+                new VcdClientImpl(endpoint, minApiVersion, cxfClientSecurityContext);
+
+        final SupportedVersionsType supportedVersions = minClient.getVersions(endpoint);
+
+        final Set<String> cloudSupportedApiVersions = new HashSet<>();
+
+        for (final VersionInfoType versionType : supportedVersions.getVersionInfo()) {
+            cloudSupportedApiVersions.add(versionType.getVersion());
+        }
+
+        if (supportedVersions.getAlphaVersion() != null) {
+            cloudSupportedApiVersions.add(supportedVersions.getAlphaVersion().getVersion());
+        }
+
+        for (final ApiVersion candidateVersion : candidateVersions) {
+            if (cloudSupportedApiVersions.contains(candidateVersion.value())) {
+                return candidateVersion.value();
+            }
+        }
+
+        throw new RuntimeException(
+                "No preferred API Version is supported by cloud. Preferred versions: "
+                        + candidateVersions.toString() + "; vCD supported versions:"
+                        + cloudSupportedApiVersions.toString() + "; Cloud URL:" + endpoint);
+    }
+
+    boolean isSystemClient() {
+        return getSession().getOrg().equals("System");
+    }
+
+    // TODO: Remove once v35 is no longer supported, see VTEN-3875
+    private boolean isZeusOrAbove() {
+        if (isZeusOrAbove == null) {
+            final String multisiteRequest = getMultisiteLocations();
+            setMultisiteRequests(false);
+            isZeusOrAbove = getVersions().getVersionInfo()
+                    .stream()
+                    .map(VersionInfoType::getVersion)
+                    .map(this::backwardsCompatSafeApiVersion)
+                    .max(ApiVersion::compareTo)
+                    .get()
+                    .isAtLeast(ApiVersion.Alias.FILTER_ENCODED_REMOVED);
+            setMultisiteLocationHeaderValue(multisiteRequest);
+        }
+        return isZeusOrAbove;
+    }
+
+    private ApiVersion backwardsCompatSafeApiVersion(String v) {
+        final ApiVersion apiVersion;
+        try {
+            apiVersion = ApiVersion.fromValue(v);
+        } catch (IllegalArgumentException e) {
+            return ApiVersion.VERSION_MAX;
+        }
+
+        return apiVersion;
+    }
+
+    /**
+     * This class definition is necessary because the no-arg constructor in SimpleBeanPropertyFilter
+     * is protected, so it can't be directly instantiated in this class.
+     *
+     */
+    private static class VcloudBeanPropertyFilter extends SimpleBeanPropertyFilter {
+
+    }
 }
+

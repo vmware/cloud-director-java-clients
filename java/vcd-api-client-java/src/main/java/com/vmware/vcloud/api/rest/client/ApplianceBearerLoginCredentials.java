@@ -1,8 +1,8 @@
-package com.vmware.vcloud.object.extensibility.vcd;
+package com.vmware.vcloud.api.rest.client;
 
 /*-
  * #%L
- * object-extensibility-vcd :: Object Extension vCD client
+ * vcd-api-client-java :: vCloud Director REST Client
  * %%
  * Copyright (C) 2018 - 2021 VMware
  * %%
@@ -29,22 +29,41 @@ package com.vmware.vcloud.object.extensibility.vcd;
  * #L%
  */
 
-import java.util.Set;
+import java.text.MessageFormat;
 
 /**
- * Interface that defines functions for interacting with vCenter-related
- * calls against the vCloud Director API. <p>
+ * Bearer Token credentials suitable for use in authenticating with a vCD Appliance using the Cloud
+ * Director Appliance API.
  *
- * Before making these calls, the extension must authenticate to the vCloud API as
- * a system administrator.
  */
-public interface VcenterManager {
-    /**
-     * Gets all the vCenters that are currently registered with a vCloud Director installation.
-     *
-     * @return a set of information about registered vCenters
-     */
-    Set<VcenterInfo> getAllRegisteredVcenters();
+public final class ApplianceBearerLoginCredentials implements ClientCredentials {
 
-    VcenterInfo getVcenterInfo(String entity);
+    private final String bearerAuthenticationHeader;
+
+    /**
+     * Construct a {@link ApplianceBearerLoginCredentials} object using an OAuth Bearer token
+     *
+     * @param oAuthBearerToken
+     *            Bearer Token supplied by the vcd appliance via the /sessions endpoint
+     */
+    public ApplianceBearerLoginCredentials(final String oAuthBearerToken) {
+        bearerAuthenticationHeader =
+                MessageFormat.format("Bearer {0}", oAuthBearerToken);
+    }
+
+    @Override
+    public String getHeaderValue() {
+        return bearerAuthenticationHeader;
+    }
+
+    @Override
+    public String getHeaderName() {
+        return "Authorization";
+    }
+
+    @Override
+    public boolean supportsSessionless() {
+        return true;
+    }
 }
+

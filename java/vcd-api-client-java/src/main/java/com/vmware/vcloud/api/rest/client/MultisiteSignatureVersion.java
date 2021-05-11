@@ -1,8 +1,8 @@
-package com.vmware.vcloud.object.extensibility.vcd;
+package com.vmware.vcloud.api.rest.client;
 
 /*-
  * #%L
- * object-extensibility-vcd :: Object Extension vCD client
+ * vcd-api-client-java :: vCloud Director REST Client
  * %%
  * Copyright (C) 2018 - 2021 VMware
  * %%
@@ -29,22 +29,38 @@ package com.vmware.vcloud.object.extensibility.vcd;
  * #L%
  */
 
-import java.util.Set;
-
 /**
- * Interface that defines functions for interacting with vCenter-related
- * calls against the vCloud Director API. <p>
  *
- * Before making these calls, the extension must authenticate to the vCloud API as
- * a system administrator.
+ * Enum with supported Multisite Signature version.
+ *
  */
-public interface VcenterManager {
-    /**
-     * Gets all the vCenters that are currently registered with a vCloud Director installation.
-     *
-     * @return a set of information about registered vCenters
-     */
-    Set<VcenterInfo> getAllRegisteredVcenters();
+public enum MultisiteSignatureVersion {
+    VERSION_1_0("1.0"),
+    VERSION_2_0("2.0"),
 
-    VcenterInfo getVcenterInfo(String entity);
+    /** Larger than all versions. Keep last! */
+    VERSION_MAX("");
+
+    private String version;
+
+    MultisiteSignatureVersion(final String version) {
+        this.version = version;
+    }
+
+    /**
+     * @return the version as string
+     */
+    public String value() {
+        return version;
+    }
+
+    public static MultisiteSignatureVersion fromValue(final String value) {
+        for (final MultisiteSignatureVersion v : MultisiteSignatureVersion.values()) {
+            if (v.value().equals(value)) {
+                return v;
+            }
+        }
+        return null;
+    }
 }
+

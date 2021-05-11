@@ -29,75 +29,44 @@ package com.vmware.vcloud.api.rest.client;
  * #L%
  */
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-
 /**
- * The status of a task
+ * The status of a task.
  *
- * Note: This Enum is clone of {@link com.vmware.vcloud.api.presentation.entity.common.TaskStatus}.
- * It is cloned in-order to avoid rest-client dependency on presentation layer.
+ * Note: This Enum matches the TaskStatus enum specified in asynclib.py of the vcd_ova_ui
+ * 		service in the vcd appliance.
  */
 
-public enum TaskStatus {
+public enum ApplianceTaskStatus {
     /**
-     * The task has been queued for execution
+     * The new task has been queued for execution.
      */
-    PENDING("pending"),
+    NEW("new"),
 
     /**
-     * The task is assigned for pre-processing
+     * The task is stopped.
      */
-    PRE_RUNNING("pre-running"),
+    STOPPED("stopped"),
 
     /**
-     * The task is running
+     * The task is running.
      */
     RUNNING("running"),
 
     /**
-     * The task completed successfully
+     * The task failed.
      */
-    SUCCESS("success"),
+    FAILED("failed");
 
-    /**
-     * The task was aborted
-     */
-    ABORTED("aborted"),
-
-    /**
-     * The task completed with an error. The {@link TaskSpec#error} field would
-     * be set with information about the error
-     */
-    ERROR("error"),
-
-    /**
-     * The task was canceled.
-     */
-    CANCELED("canceled");
-
-    public static final TaskStatus[] TERMINAL_STATUSES = new TaskStatus[] { SUCCESS, ABORTED, ERROR, CANCELED };
-
-    private static final Map<String, TaskStatus> REVERSE_LOOKUP_MAP;
-    static {
-        final Map<String, TaskStatus> reverseLookupMap =
-                Stream.of(TaskStatus.values()).collect(Collectors.toMap(TaskStatus::getLabel, ts -> ts));
-
-        REVERSE_LOOKUP_MAP = Collections.unmodifiableMap(reverseLookupMap);
-    }
+    public static final ApplianceTaskStatus[] TERMINAL_STATUSES = new ApplianceTaskStatus[] { STOPPED, FAILED };
 
     private final String label;
 
-    TaskStatus(String label) {
+    ApplianceTaskStatus(String label) {
         this.label = label;
     }
 
     /**
-     * Getter for {@link TaskStatus#label}
+     * Getter for {@link ApplianceTaskStatus#label}
      */
     public String getLabel() {
         return label;
@@ -109,11 +78,6 @@ public enum TaskStatus {
     @Override
     public String toString() {
         return getLabel();
-    }
-
-    public static TaskStatus from(String s) {
-        final Optional<TaskStatus> ts = Optional.ofNullable(REVERSE_LOOKUP_MAP.get(s));
-        return ts.orElseThrow(IllegalArgumentException::new);
     }
 }
 

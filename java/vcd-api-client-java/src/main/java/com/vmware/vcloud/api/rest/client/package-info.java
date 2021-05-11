@@ -1,9 +1,3 @@
-/* ***************************************************************************
- * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
- * SPDX-License-Identifier: BSD-2-Clause
- * **************************************************************************/
-
 /*
  * !!! NOTE !!!
  *
@@ -92,7 +86,7 @@
  *
  * CXF wire logging confirms that the Accept header used is <code>*&sol;*</code> instead of the
  * value specified in the {@link javax.ws.rs.Consumes @Consumes} annotation for the getter.</li>
- * <li>Accessing Response<BR>
+ * <li>Accessing Response - <I>Old</I><BR>
  * {@link javax.ws.rs.core.Response} is also accessed via the CXF
  * {@link org.apache.cxf.jaxrs.client.Client} that must be retrieved <em>before</em> invoking the
  * API call. After the call completes, {@link org.apache.cxf.jaxrs.client.Client#getResponse()} will
@@ -112,6 +106,59 @@
  *         System.out.println("Response status code: " + response.getStatus());
  * </pre>
  *
+ * <P>This style is handy if the client was already accessed for configuring the request. You can
+ * continue to utilize it to retrieve a response.
+ * </li>
+ * <li><B>***NEW***</B> Accessing Response<BR>
+ * After invoking an API call, various entities of a call may be accessed via a series of convenience
+ * methods.
+ *
+ * <pre>
+ *         final OpenApiClient openApiClient = authenticatedVcdClient.getOpenApiClient();
+ *         final ApiInterface api = openApiClient.createProxy(ApiInterface.class);
+ *
+ *         // Invoke an API
+ *         final ApiModel model = api.getApiModel();
+ *
+ *         // Retrieve the status code.
+ *         final StatusType statusType = openApiClient.getLastStatus();
+ *         System.out.println("Response status code: " + statusType.getStatusCode());
+ *
+ *         // Retrieve the content-type code.
+ *         final Collection<javax.ws.rs.core.Link>  = openApiClient.getLastLinks();
+ *
+ *         // Retrieve the links.
+ *         final StatusType statusType = openApiClient.getLastContentType();
+ *         System.out.println("Response status code: " + statusType.getStatusCode());
+ *
+ *         // Retrieve task, if any
+ *         final URI taskUri = openApiClient.getLastTaskURI();
+ *         if (taskUri != null) {
+ *             final TaskType task = openApiClient.getLastTask();
+ *         }
+ *
+ *         // ... or get the whole response
+ *         final Response response  = openApiClient.getLastResponse(api);
+ *         final ApiModel model = api.getApiModel();
+ *
+ *         // When ready, invoke a different API
+ *         final ApiModel2 model2 = api.getApiModel2();
+ * </pre>
+ *
+ * <P>If the API call throws an error, you can retrieve the parsed Error object as such:
+ *
+ * <pre>
+ *         final OpenApiClient openApiClient = authenticatedVcdClient.getOpenApiClient();
+ *         final ApiInterface api = openApiClient.createProxy(ApiInterface.class);
+ *
+ *         try {
+ *             // Invoke an API
+ *             final ApiModel model = api.getApiModel();
+ *         } catch (WebApplicationException wae) {
+ *             final Error error = openApiClient.getLastError(api);
+ *             // do error handling
+ *         }
+ * </pre>
  * </li>
  * <li>Putting together a workflow<BR>
  * Above components can be put together to produce a workflow that resembles a normal
@@ -123,29 +170,38 @@
  *
  *         // Get
  *         final ApiModel model = api.getApiModel();
+ *         // Check content-type
+ *         Assert.assertEquals(openApiClient.getLastContentType(api), "application/json");
  *
  *         // Invoke a task
  *         final byte[] binaryData = getSomeData();
  *
  *         final Client clientForTask  = openApiClient.getWebClientForNextCall(api);
  *         clientForTask.accept(MediaType.APPLICATION_OCTET_STREAM);
- *         final TaskModel task = api.postAction(model, binaryData);
+ *         api.postAction(model, binaryData);
  *
+ *         // Old-style accessing task.
  *         final Response taskResponse = clientForTask.getResponse();
  *         Assert.assertEquals(response.getStatus(), Response.Status.ACCEPTED);
  *
  *         // Update
  *         model.setXYZ(newXyz);
+ *         api.putModel(model);
  *
- *         final ApiModel updatedModel = api.putModel(model);
+ *         // New-style accessing task and status.
+ *         Assert.assertNotNull(openApiClient.getLastTaskUri(api));
+ *         final Response taskResponse = openApiClient.getLastTask(api);
+ *         Assert.assertEquals(openApiClient.getLastStatus(api), Response.Status.ACCEPTED);
  *
  *         // And finally delete
- *         final Client clientForDelete  = openApiClient.getWebClientForNextCall(api);
- *
- *         api.deleteModel(updatedModel);      // returns void.
- *
- *         final Response taskResponse = clientForDelete.getResponse();
- *         Assert.assertEquals(response.getStatus(), Response.Status.NO_CONTENT);
+ *         try {
+ *             api.deleteModel(updatedModel);      // returns void.
+ *             Assert.assertEquals(openApiClient.getLastStatus(api), Response.Status.NO_CONTENT);
+ *         } catch (javax.ws.rs.WebApplicationException wae) {
+ *             final Error error = openApiClient.getLastError(api);
+ *             System.err.println(error.getMessage());
+ *             throw wae;
+ *         }
  * </pre>
  *
  * As can be seen, the same interface proxy can be used for any number of calls. Underlying client
@@ -159,5 +215,34 @@
  * </ol>
  *
  */
-
 package com.vmware.vcloud.api.rest.client;
+
+/*-
+ * #%L
+ * vcd-api-client-java :: vCloud Director REST Client
+ * %%
+ * Copyright (C) 2018 - 2021 VMware
+ * %%
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * #L%
+ */
+

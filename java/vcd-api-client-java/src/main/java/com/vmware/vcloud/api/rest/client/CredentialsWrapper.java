@@ -1,8 +1,8 @@
-package com.vmware.vcloud.object.extensibility.vcd;
+package com.vmware.vcloud.api.rest.client;
 
 /*-
  * #%L
- * object-extensibility-vcd :: Object Extension vCD client
+ * vcd-api-client-java :: vCloud Director REST Client
  * %%
  * Copyright (C) 2018 - 2021 VMware
  * %%
@@ -29,22 +29,38 @@ package com.vmware.vcloud.object.extensibility.vcd;
  * #L%
  */
 
-import java.util.Set;
+import java.util.Objects;
 
 /**
- * Interface that defines functions for interacting with vCenter-related
- * calls against the vCloud Director API. <p>
- *
- * Before making these calls, the extension must authenticate to the vCloud API as
- * a system administrator.
+ * Class that wraps a {@link ClientCredentials} implementation
  */
-public interface VcenterManager {
-    /**
-     * Gets all the vCenters that are currently registered with a vCloud Director installation.
-     *
-     * @return a set of information about registered vCenters
-     */
-    Set<VcenterInfo> getAllRegisteredVcenters();
+public class CredentialsWrapper implements ClientCredentials {
 
-    VcenterInfo getVcenterInfo(String entity);
+    private final ClientCredentials clientCredentials;
+
+    /**
+     * Construct credentials from a valid vCD organization qualified username  (username@orgname)
+     * and a password.
+     */
+    public CredentialsWrapper(final ClientCredentials credentials) {
+        Objects.requireNonNull(credentials, "credentials cannot be null");
+        this.clientCredentials = credentials;
+    }
+
+    @Override
+    public String getHeaderValue() {
+        return clientCredentials.getHeaderValue();
+    }
+
+    @Override
+    public String getHeaderName() {
+        return clientCredentials.getHeaderName();
+    }
+
+    @Override
+    public boolean supportsSessionless() {
+        return clientCredentials.supportsSessionless();
+    }
+
 }
+

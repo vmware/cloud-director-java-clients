@@ -1,8 +1,8 @@
-package com.vmware.vcloud.object.extensibility.vcd;
+package com.vmware.vcloud.api.rest.client;
 
 /*-
  * #%L
- * object-extensibility-vcd :: Object Extension vCD client
+ * vcd-api-client-java :: vCloud Director REST Client
  * %%
  * Copyright (C) 2018 - 2021 VMware
  * %%
@@ -29,22 +29,51 @@ package com.vmware.vcloud.object.extensibility.vcd;
  * #L%
  */
 
-import java.util.Set;
+import org.apache.cxf.common.util.Base64Utility;
 
 /**
- * Interface that defines functions for interacting with vCenter-related
- * calls against the vCloud Director API. <p>
- *
- * Before making these calls, the extension must authenticate to the vCloud API as
- * a system administrator.
+ * Username/password Credentials suitable for use in authenticating with a vCD Appliance using the
+ * Appliance API
  */
-public interface VcenterManager {
-    /**
-     * Gets all the vCenters that are currently registered with a vCloud Director installation.
-     *
-     * @return a set of information about registered vCenters
-     */
-    Set<VcenterInfo> getAllRegisteredVcenters();
+public class ApplianceBasicLoginCredentials implements ClientCredentials {
 
-    VcenterInfo getVcenterInfo(String entity);
+    private final String authorizationHeader;
+
+
+    /**
+     * Construct credentials from a valid vCD appliance username and a password.
+     */
+    public ApplianceBasicLoginCredentials(String userName, String password) {
+        this(userName + ":" + password);
+    }
+
+    private ApplianceBasicLoginCredentials(String userString) {
+        authorizationHeader = "Basic " + Base64Utility.encode(userString.getBytes());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return authorizationHeader.equals(obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return authorizationHeader.hashCode();
+    }
+
+    @Override
+    public String getHeaderValue() {
+        return authorizationHeader;
+    }
+
+    @Override
+    public String getHeaderName() {
+        return "Authorization";
+    }
+
+    @Override
+    public boolean supportsSessionless() {
+        return true;
+    }
+
 }

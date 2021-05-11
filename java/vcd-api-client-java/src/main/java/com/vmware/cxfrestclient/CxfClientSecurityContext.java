@@ -1,10 +1,33 @@
-/* *****************************************************************************
- * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
- * SPDX-License-Identifier: BSD-2-Clause
- * ****************************************************************************/
-
 package com.vmware.cxfrestclient;
+
+/*-
+ * #%L
+ * vcd-api-client-java :: vCloud Director REST Client
+ * %%
+ * Copyright (C) 2018 - 2021 VMware
+ * %%
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * #L%
+ */
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -32,6 +55,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509KeyManager;
 import javax.net.ssl.X509TrustManager;
+
 
 /**
  * A security context for {@link AbstractCxfRestClient} to control select SSL connection and https verification parameters
@@ -224,9 +248,9 @@ public final class CxfClientSecurityContext {
 
         final KeyManagerFactory keyManagerFactory;
         try {
-            keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
+            keyManagerFactory = KeyManagerFactory.getInstance("X509");
         } catch (NoSuchAlgorithmException nsae) {
-            throw new AssertionError("Required Key Manager algorithm SunX509 unavailable on this system", nsae);
+            throw new AssertionError("Required Key Manager algorithm X509 unavailable on this system", nsae);
         }
 
         keyManagerFactory.init(keystore, keyPassword);
@@ -244,16 +268,22 @@ public final class CxfClientSecurityContext {
     private static String getTLSVersionForJava() {
         String javaVersionStr = System.getProperty("java.version");
         final String[] versionParts = javaVersionStr.split("\\.");
-        if (Integer.parseInt(versionParts[0]) == 1) {
-            final int javaMajorVersion = Integer.parseInt(versionParts[1]);
-            if (javaMajorVersion >= 8) {
-                return "TLS";
-            } else if (javaMajorVersion == 7) {
-                return "TLSv1.2";
-            }
+        final int firstNumber = Integer.parseInt(versionParts[0]);
+        if (firstNumber == 11) {
+            return getTLSVersion(javaVersionStr, firstNumber);
+        } else {
+            return getTLSVersion(javaVersionStr, Integer.parseInt(versionParts[1]));
+        }
+    }
+
+    private static String getTLSVersion(final String javaVersionStr, final int javaMajorVersion) {
+        if (javaMajorVersion >= 8) {
+            return "TLS";
+        } else if (javaMajorVersion == 7) {
+            return "TLSv1.2";
         }
         throw new UnsupportedOperationException("Java version " + javaVersionStr + " is not supported." +
-                                                " Java 1.7 or later required");
+                " Java 1.7 or later required");
     }
 
     private SSLSocketFactory createRestrictedSocketFactory(final KeyManager[] keyManagers, final TrustManager[] trustManagers,
@@ -322,6 +352,11 @@ public final class CxfClientSecurityContext {
         }
 
         @Override
+        public Socket createSocket() throws IOException {
+            return restrict((SSLSocket) sslSocketFactory.createSocket());
+        }
+
+        @Override
         public Socket createSocket(Socket s, String host, int port, boolean autoClose)
                 throws IOException {
             return restrict((SSLSocket) sslSocketFactory.createSocket(s, host, port, autoClose));
@@ -365,3 +400,4 @@ public final class CxfClientSecurityContext {
         }
     }
 }
+
