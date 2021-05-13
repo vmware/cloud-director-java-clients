@@ -30,61 +30,39 @@ package com.vmware.vcloud.api.rest.client;
  * #L%
  */
 
-import org.apache.cxf.common.util.Base64Utility;
+import java.util.regex.Pattern;
 
 /**
- * Username@Org/password Credentials suitable for use in authenticating with a vCD server using the
- * vCloud API
+ *
+ * Format information for the multisite signature authentication
+ *
  */
-public class VcdBasicLoginCredentials implements ClientCredentials {
+public class VcdMultisiteSignatureFormatConstants {
+    public static final String AUTH_TYPE = "Multisite";
 
-    private final String authorizationHeader;
+    public static final Pattern MULTISITE_LOGIN_PATTERN = Pattern.compile("^Multisite (.+)$",
+            Pattern.CASE_INSENSITIVE);
 
-    /**
-     * Construct credentials from a valid vCD organization qualified username  (username@orgname)
-     * and a password.
-     */
-    public VcdBasicLoginCredentials(String userNameAtOrg, String password) {
-        this(userNameAtOrg + ":" + password);
-    }
+    public static final Pattern MULTISITE_SIGNATURE_V1_PATTERN = Pattern
+            .compile("(.+):(.+) (.+); (.+)@(.+)");
+    public static final Pattern MULTISITE_SITNATURE_V2_PATTERN = Pattern
+            .compile("(.+)@(.+) (.+); (.+)@(.+)");
 
-    /**
-     * Construct credentials from a valid vCD user and org names and a password.
-     */
-    public VcdBasicLoginCredentials(String userName, String orgName, String password) {
-        this(userName + "@" + orgName + ":" + password);
-    }
+    public static final Pattern MULTISITE_LOGIN_PATTERN_VERSIONED = Pattern.compile(
+            "^Multisite v:(.+?); (.+)$", Pattern.CASE_INSENSITIVE);
 
-    private VcdBasicLoginCredentials(String userString) {
-        authorizationHeader = "Basic " + Base64Utility.encode(userString.getBytes());
-    }
+    public static final String MULTISITE_UNVERSIONED_HEADER_TEMPLATE = "{0} {1}:{2} {3}; {4}";
+    public static final String MULTISITE_BASIC_AUTH_USERORG_TEMPLATE = "{0}@{1}";
+    public static final String MULTISITE_VERSIONED_HEADER_TEMPLATE = "{0} v:{1}; {2}@{3} {4}; {5}";
 
-    @Override
-    public boolean equals(Object obj) {
-        return authorizationHeader.equals(obj);
-    }
+    public static final String V1_SIGNING_STRING_TEMPLATE = "(request-target): {0} {1}\n"
+            + "date: {2}\n" + "digest: {3}\n" + "content-length: {4}";
+    public static final String V1_DIGEST_ALG = "SHA-256";
 
-    @Override
-    public int hashCode() {
-        return authorizationHeader.hashCode();
-    }
+    public static final String V2_SIGNING_STRING_TEMPLATE = "(request-target): {0} {1}\n"
+            + "date: {2}\n" + "content-type: {3}";
 
-    @Override
-    public String getHeaderValue() {
-        return authorizationHeader;
-    }
-
-    @Override
-    public String getHeaderName() {
-        return "Authorization";
-    }
-
-    @Override
-    public boolean supportsSessionless() {
-        return false;
-    }
-
-
+    public static final String SIGNATURE_ALGORITHM = "SHA256withRSA";
 }
 
 

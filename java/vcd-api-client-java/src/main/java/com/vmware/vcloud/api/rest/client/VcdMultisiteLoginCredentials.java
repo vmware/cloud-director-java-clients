@@ -1,10 +1,34 @@
-/* *********************************************************************
- * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
- * SPDX-License-Identifier: BSD-2-Clause
- * *********************************************************************/
 
 package com.vmware.vcloud.api.rest.client;
+
+/*-
+ * #%L
+ * vcd-api-client-java :: vCloud Director REST Client
+ * %%
+ * Copyright (C) 2018 - 2021 VMware
+ * %%
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * #L%
+ */
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -21,12 +45,22 @@ import java.util.UUID;
 import javax.ws.rs.ProcessingException;
 
 import com.vmware.vcloud.api.rest.client.filters.MultisiteAuthorizationFilter;
+import com.vmware.vcloud.api.rest.version.ApiVersion;
 
 import org.apache.cxf.message.Message;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+
+import static com.vmware.vcloud.api.rest.client.VcdMultisiteSignatureFormatConstants.AUTH_TYPE;
+import static com.vmware.vcloud.api.rest.client.VcdMultisiteSignatureFormatConstants.MULTISITE_BASIC_AUTH_USERORG_TEMPLATE;
+import static com.vmware.vcloud.api.rest.client.VcdMultisiteSignatureFormatConstants.MULTISITE_UNVERSIONED_HEADER_TEMPLATE;
+import static com.vmware.vcloud.api.rest.client.VcdMultisiteSignatureFormatConstants.MULTISITE_VERSIONED_HEADER_TEMPLATE;
+import static com.vmware.vcloud.api.rest.client.VcdMultisiteSignatureFormatConstants.SIGNATURE_ALGORITHM;
+import static com.vmware.vcloud.api.rest.client.VcdMultisiteSignatureFormatConstants.V1_DIGEST_ALG;
+import static com.vmware.vcloud.api.rest.client.VcdMultisiteSignatureFormatConstants.V1_SIGNING_STRING_TEMPLATE;
+import static com.vmware.vcloud.api.rest.client.VcdMultisiteSignatureFormatConstants.V2_SIGNING_STRING_TEMPLATE;
 
 /**
  *
@@ -50,26 +84,13 @@ import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
  */
 public class VcdMultisiteLoginCredentials implements ClientCredentials {
 
-    public static final String AUTH_TYPE = "Multisite";
 
-    public static final String MULTISITE_BASIC_AUTH_HEADER_TEMPLATE = "{0} {1}:{2} {3}; {4}";
-    public static final String MULTISITE_SSO_AUTH_HEADER_TEMPLATE = "{0} {1}:{2} {3}, {4}";
-    public static final String MULTISITE_BASIC_AUTH_USERORG_TEMPLATE = "{0}@{1}";
-
-    private static final String SIGNING_STRING_TEMPLATE = "(request-target): {0} {1}\n"
-            + "date: {2}\n" + "digest: {3}\n" + "content-length: {4}";
-    private static final String DIGEST_ALG = "SHA-256";
-    private static final String SIGNATURE_ALGORITHM = "SHA256withRSA";
 
     private final String delegateCredentials;
-
     private final PrivateKey privateKey;
-
-    private final String authTemplate;
-
     private final UUID localSiteId;
-
     private final UUID localOrgId;
+    private final ApiVersion apiVersion;
 
     /**
      * Construct the multisite credentials with the key to sign with and basic credentials of the
@@ -88,7 +109,8 @@ public class VcdMultisiteLoginCredentials implements ClientCredentials {
      * @throws IOException
      */
     public VcdMultisiteLoginCredentials(final UUID localSiteId, final UUID localOrgId,
-            final String userName, final String orgName, final String pemEncodedKey)
+            final String userName, final String orgName, final String pemEncodedKey,
+            final ApiVersion apiVersion)
             throws IOException {
         this.delegateCredentials = MessageFormat.format(MULTISITE_BASIC_AUTH_USERORG_TEMPLATE,
                 Objects.requireNonNull(userName, "username id is required"),
@@ -96,30 +118,7 @@ public class VcdMultisiteLoginCredentials implements ClientCredentials {
         this.privateKey = getPrivateKeyFromPemEncoding(Objects.requireNonNull(pemEncodedKey, "private key is required"));
         this.localSiteId = Objects.requireNonNull(localSiteId, "local site id is required");
         this.localOrgId = Objects.requireNonNull(localOrgId, "local org id is required");
-        this.authTemplate = MULTISITE_BASIC_AUTH_HEADER_TEMPLATE;
-    }
-
-    /**
-     * Construct the multisite credentials with the key to sign with and the SSO credentials of the
-     * user the multisite request is made on behalf of
-     *
-     * @param localSiteId
-     *            local site UUID
-     * @param localOrgId
-     *            local Org UUID
-     * @param ssoCredentials
-     *            User sso credentials for whom the multi-site request is being made
-     * @param privateKey
-     *            Private key to sign the contents with
-     * @throws IOException
-     */
-    public VcdMultisiteLoginCredentials(final UUID localSiteId, final UUID localOrgId,
-            final String ssoCredentials, final String pemEncodedKey) throws IOException {
-        this.delegateCredentials = Objects.requireNonNull(ssoCredentials, "SSO credentials is required");
-        this.privateKey = getPrivateKeyFromPemEncoding(Objects.requireNonNull(pemEncodedKey, "private key is required"));
-        this.localSiteId = Objects.requireNonNull(localSiteId, "local site id is required");
-        this.localOrgId = Objects.requireNonNull(localOrgId, "local org id is required");
-        this.authTemplate = MULTISITE_SSO_AUTH_HEADER_TEMPLATE;
+        this.apiVersion = apiVersion;
     }
 
     @Override
@@ -157,14 +156,28 @@ public class VcdMultisiteLoginCredentials implements ClientCredentials {
      * @return Authorization header string
      */
     public String createMultisiteAuthorizationHeader(final String date, final String method,
-            final String path, final byte[] contentBytes) {
+            final String path, final String contentType) {
         try {
-            final String signingString =
-                    constructSignatureString(date, method, path, contentBytes);
+            final String signingString;
+            if (apiVersion.isAtMost(ApiVersion.VERSION_30_0)) {
+                signingString = constructV1SignatureString(date, method, path);
+            } else {
+                signingString =
+                        MessageFormat.format(V2_SIGNING_STRING_TEMPLATE, method, path, date,
+                                contentType);
+            }
             final String signature = signMessage(signingString);
 
-            return MessageFormat.format(authTemplate, AUTH_TYPE, localSiteId, localOrgId,
-                    signature, delegateCredentials);
+            if (apiVersion.isAtMost(ApiVersion.VERSION_30_0)) {
+                return MessageFormat.format(MULTISITE_UNVERSIONED_HEADER_TEMPLATE, AUTH_TYPE,
+                        localSiteId, localOrgId, signature,
+                        delegateCredentials);
+            } else {
+                return MessageFormat.format(MULTISITE_VERSIONED_HEADER_TEMPLATE, AUTH_TYPE,
+                        MultisiteSignatureVersion.VERSION_2_0.value(), localOrgId, localSiteId,
+                        signature, delegateCredentials);
+            }
+
         } catch (final Exception e) {
             throw new ProcessingException(e);
         }
@@ -182,20 +195,17 @@ public class VcdMultisiteLoginCredentials implements ClientCredentials {
         }
     }
 
-    private String constructSignatureString(final String date, final String method,
-            final String path, byte[] contentBytes)
+    private String constructV1SignatureString(final String date, final String method,
+            final String path)
             throws NoSuchAlgorithmException, IOException {
 
-        if (contentBytes == null) {
-            contentBytes = new byte[0];
-        }
-
-        final String digest = createDigest(contentBytes);
-        final int contentLength = contentBytes.length;
+        // These values are kept for backwards compatibility purposes
+        final String digest = createDigest(new byte[0]);
+        final int contentLength = new byte[0].length;
 
         //Construct the string of details to sign
         final String signingString =
-                MessageFormat.format(SIGNING_STRING_TEMPLATE, method, path, date, digest,
+                MessageFormat.format(V1_SIGNING_STRING_TEMPLATE, method, path, date, digest,
                         contentLength);
         return signingString;
     }
@@ -211,7 +221,7 @@ public class VcdMultisiteLoginCredentials implements ClientCredentials {
      */
     private String createDigest(final byte[] contentBytes) throws NoSuchAlgorithmException,
             IOException {
-        final MessageDigest md = MessageDigest.getInstance(DIGEST_ALG);
+        final MessageDigest md = MessageDigest.getInstance(V1_DIGEST_ALG);
         md.update(contentBytes);
         final byte[] digestBytes = md.digest();
         return Base64.getEncoder().encodeToString(digestBytes);
@@ -245,3 +255,5 @@ public class VcdMultisiteLoginCredentials implements ClientCredentials {
     }
 
 }
+
+

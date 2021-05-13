@@ -1,10 +1,34 @@
-/* ***************************************************************************
- * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
- * SPDX-License-Identifier: BSD-2-Clause
- * **************************************************************************/
 
 package com.vmware.cxfrestclient;
+
+/*-
+ * #%L
+ * vcd-api-client-java :: vCloud Director REST Client
+ * %%
+ * Copyright (C) 2018 - 2021 VMware
+ * %%
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * #L%
+ */
 
 import java.io.File;
 import java.net.HttpURLConnection;
@@ -74,7 +98,7 @@ public abstract class AbstractCxfRestClient implements JaxRsClient {
         return endpoint;
     }
 
-    private boolean handleException(URI uri, WebApplicationException e, int failureCount) {
+    protected boolean handleException(URI uri, WebApplicationException e, int failureCount) {
         return
             errorHandler != null &&
             errorHandler.handleError(this, uri, e, failureCount) == Disposition.RETRY;
@@ -128,7 +152,7 @@ public abstract class AbstractCxfRestClient implements JaxRsClient {
         handleNoContentResponse(response);
     }
 
-    private void handleNoContentResponse(Response response) {
+    protected void handleNoContentResponse(Response response) {
         if (response.getStatus() != HttpURLConnection.HTTP_NO_CONTENT) {
             throw makeException(new WebApplicationException(response));
         }
@@ -168,16 +192,7 @@ public abstract class AbstractCxfRestClient implements JaxRsClient {
 
     @Override
     public <ContentsClass> Response postResource(URI uri, String type, JAXBElement<ContentsClass> contents) {
-        int failureCount = 0;
-        do {
-            try {
-                return createWebClient(uri, type).post(contents);
-            } catch (WebApplicationException e) {
-                if (! handleException(uri, e, ++failureCount)) {
-                    throw makeException(e);
-                }
-            }
-        } while (true);
+        return postResourceObject(uri, type, contents);
     }
 
     @Override
@@ -276,6 +291,19 @@ public abstract class AbstractCxfRestClient implements JaxRsClient {
         configureHttpRequestHeaders(WebClient.client(proxy));
     }
 
+    protected Response postResourceObject(URI uri, String type, Object contents) {
+        int failureCount = 0;
+        do {
+            try {
+                return createWebClient(uri, type).post(contents);
+            } catch (WebApplicationException e) {
+                if (! handleException(uri, e, ++failureCount)) {
+                    throw makeException(e);
+                }
+            }
+        } while (true);
+    }
+
     /**
      * Set the appropriate ssl context and https hostname verification for this client
      */
@@ -298,9 +326,15 @@ public abstract class AbstractCxfRestClient implements JaxRsClient {
         httpConduit.getClient().setAllowChunking(true);
     }
 
+    private void increaseHttpClientConnectionTimeout(ClientConfiguration config) {
+        HTTPConduit httpConduit = (HTTPConduit) config.getConduit();
+        httpConduit.getClient().setConnectionTimeout(90000);
+    }
+
     private void adjustConfiguration(ClientConfiguration config) {
         configureSSLTrustManager(config);
         addHttpChunking(config);
+        increaseHttpClientConnectionTimeout(config);
     }
 
     protected void configureClient(Object client) {
@@ -308,3 +342,5 @@ public abstract class AbstractCxfRestClient implements JaxRsClient {
         configureHttpRequestHeaders(client);
     }
 }
+
+

@@ -1,9 +1,34 @@
-/* **********************************************************************
- * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
- * SPDX-License-Identifier: BSD-2-Clause
- * *********************************************************************/
+
 package com.vmware.vcloud.api.rest.client;
+
+/*-
+ * #%L
+ * vcd-api-client-java :: vCloud Director REST Client
+ * %%
+ * Copyright (C) 2018 - 2021 VMware
+ * %%
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * #L%
+ */
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -11,7 +36,7 @@ import java.util.List;
 
 import javax.ws.rs.core.UriBuilder;
 
-import com.vmware.vcloud.api.rest.client.constants.RestConstants;
+import com.vmware.vcloud.api.rest.constants.RestConstants;
 import com.vmware.vcloud.api.rest.links.LinkRelation;
 import com.vmware.vcloud.api.rest.schema_v1_5.EntityType;
 import com.vmware.vcloud.api.rest.schema_v1_5.IdentifiableResourceType;
@@ -113,6 +138,22 @@ public class VcdUtils {
     }
 
     /**
+     * Returns the link of the specified type in the specified list of links
+     *
+     * @param link List of links
+     * @param mediaType The media type to look for
+     * @return the link, or null if no such link
+     */
+    public static LinkType findLink(List<LinkType> links, String mediaType) {
+        for (LinkType link : links) {
+            if (mediaType.equals(link.getType())) {
+                return link;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Returns all the links of the specified rel and type in the specified resource
      * @param resource the resource with the link
      * @param rel the rel of the desired link
@@ -142,7 +183,10 @@ public class VcdUtils {
      * Convenience method to turn a {@link ResourceType} into a {@link ReferenceType} to that resource.
      */
     public static ReferenceType makeRef(ResourceType resource) {
-        ReferenceType ref = new ReferenceType();
+        if (resource == null) {
+            return null;
+        }
+        final ReferenceType ref = new ReferenceType();
         ref.setHref(resource.getHref());
         ref.setType(resource.getType());
         return ref;
@@ -152,7 +196,10 @@ public class VcdUtils {
      * Convenience method to turn an {@link IdentifiableResourceType} into a {@link ReferenceType} to that resource.
      */
     public static ReferenceType makeRef(IdentifiableResourceType identifiableResource) {
-        ReferenceType ref = makeRef((ResourceType) identifiableResource);
+        final ReferenceType ref = makeRef((ResourceType) identifiableResource);
+        if (ref == null) {
+            return null;
+        }
         ref.setId(identifiableResource.getId());
         return ref;
     }
@@ -161,7 +208,10 @@ public class VcdUtils {
      * Convenience method to turn an {@link EntityType} into a {@link ReferenceType} to that entity.
      */
     public static ReferenceType makeRef(EntityType entity) {
-        ReferenceType ref = makeRef((IdentifiableResourceType) entity);
+        final ReferenceType ref = makeRef((IdentifiableResourceType) entity);
+        if (ref == null) {
+            return null;
+        }
         ref.setName(entity.getName());
         return ref;
     }
@@ -204,3 +254,5 @@ public class VcdUtils {
         return taskList.get(0);
     }
 }
+
+
