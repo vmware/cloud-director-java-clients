@@ -1,8 +1,8 @@
-package com.vmware.vcloud.object.extensibility.vcd;
+package com.vmware.vcloud.api.rest.client;
 
 /*-
  * #%L
- * object-extensibility-vcd :: Object Extension vCD client
+ * vcd-api-client-java :: vCloud Director REST Client
  * %%
  * Copyright (C) 2018 - 2021 VMware
  * %%
@@ -29,35 +29,11 @@ package com.vmware.vcloud.object.extensibility.vcd;
  * #L%
  */
 
-import java.net.URI;
-
-import com.vmware.cxfrestclient.CxfClientSecurityContext;
-
-/**
- * Interface that defines the properties that are needed to connect to the vCloud
- * Director API.
- */
-public interface ApiConnectionInfo {
-    /**
-     * Gets the {@link URI} endpoint of the vCloud Director API.
-     *
-     * @return a {@link URI} endpoint
-     */
-    URI getEndpoint();
+public class VcdClientConstants {
 
     /**
-     * Gets the security context to use for communicating with the vCloud Director
-     * API via HTTPS.
-     *
-     * @return a security context instance
+     * To request an unlimited page size in various APIs where the response is paginated.
      */
-    CxfClientSecurityContext getSecurityContext();
-
-    /**
-     * Gets the version of the vCloud Director API preferred by the API client.
-     *
-     * @return an API version string
-     */
-    String getVersion();
+    public static final Integer INFINITE_PAGE_SIZE = 0;
 }
 
