@@ -1,28 +1,50 @@
-/* ***************************************************************************
- * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
- * SPDX-License-Identifier: BSD-2-Clause
- * **************************************************************************/
-
 package com.vmware.vcloud.api.rest.client;
+
+/*-
+ * #%L
+ * vcd-api-client-java :: vCloud Director REST Client
+ * %%
+ * Copyright (C) 2018 - 2021 VMware
+ * %%
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * #L%
+ */
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import javax.ws.rs.core.Response;
 import javax.xml.bind.JAXBElement;
 
-import org.apache.cxf.jaxrs.client.Client;
-import org.apache.cxf.jaxrs.ext.search.SearchUtils;
-import org.apache.cxf.jaxrs.ext.search.client.SearchConditionBuilder;
-
 import com.vmware.cxfrestclient.CxfClientSecurityContext;
 import com.vmware.cxfrestclient.JaxRsClient;
-import com.vmware.vcloud.api.rest.client.constants.RelationType;
+import com.vmware.vcloud.api.rest.constants.RelationType;
+import com.vmware.vcloud.api.rest.constants.XmlJsonTypeMatcher;
 import com.vmware.vcloud.api.rest.schema.versioning.SupportedVersionsType;
 import com.vmware.vcloud.api.rest.schema_v1_5.AdminOrgType;
 import com.vmware.vcloud.api.rest.schema_v1_5.ApiExtensibilityType;
@@ -36,6 +58,11 @@ import com.vmware.vcloud.api.rest.schema_v1_5.ResourceType;
 import com.vmware.vcloud.api.rest.schema_v1_5.SessionType;
 import com.vmware.vcloud.api.rest.schema_v1_5.VCloudType;
 import com.vmware.vcloud.api.rest.schema_v1_5.extension.VMWExtensionType;
+
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.cxf.jaxrs.client.Client;
+import org.apache.cxf.jaxrs.ext.search.SearchUtils;
+import org.apache.cxf.jaxrs.ext.search.client.SearchConditionBuilder;
 
 /**
  * A vCloud REST API client.  Extends {@link JaxRsClient} with behaviors specific to the vCloud REST API.
@@ -56,19 +83,6 @@ public interface VcdClient extends JaxRsClient {
     }
 
     /**
-     * Returns client request ID to use when making request to VCD.
-     * <p>
-     * The client request ID is never cached and is fetched anew for each request to VCD.
-     */
-    public interface ClientRequestIdProvider {
-
-        /**
-         * @return client request ID to specify in request to VCD
-         */
-        String getClientRequestId();
-    }
-
-    /**
      * An token that can be retrieved from one {@link VcdClient} to attach another {@link VcdClient}
      * to the same session.
      */
@@ -79,6 +93,35 @@ public interface VcdClient extends JaxRsClient {
          */
         String getAuthenticationToken();
     }
+
+    /**
+     *
+     */
+    enum WireFormat {
+        XML(XmlJsonTypeMatcher::getXmlTypeFor),
+        JSON(XmlJsonTypeMatcher::getJsonTypeFor);
+
+        private final Function<String, String> switchToFunction;
+
+        private WireFormat(Function<String, String> switchToFunction) {
+            this.switchToFunction = switchToFunction;
+        }
+
+        @Override
+        public String toString() {
+            return name().toLowerCase();
+        }
+
+        public String switchMediaType(String type) {
+            return ObjectUtils.firstNonNull(switchToFunction.apply(type), type);
+        }
+    };
+
+    /**
+     *
+     * @param wireFormat
+     */
+    void setWireFormat(WireFormat wireFormat);
 
     /**
      * Gets information about the vCloud API versions supported by the server.
@@ -155,7 +198,7 @@ public interface VcdClient extends JaxRsClient {
      *            {@link ClientRequestIdProvider} to use to populate client request ID in requests
      *            to VCD
      */
-    void setClientRequestIdProvider(ClientRequestIdProvider clientRequestIdProvider);
+    void setClientRequestIdProvider(Supplier<String> clientRequestIdProvider);
 
     /**
      * Get the current opaque session token for this client. This can be used to attach a new
@@ -522,9 +565,14 @@ public interface VcdClient extends JaxRsClient {
     void setAuthenticationHeader(Client client);
 
     /**
-     * Sets the X-VMWARE-VCLOUD-ORG-ID header to the specified value
+     * Sets the X-VMWARE-VCLOUD-TENANT-CONTEXT header to the specified value
      */
-    void setOrgContextHeader(String orgContext);
+    void setTenantContextHeader(String tenantContext);
+
+    /**
+     * Sets the X-VMWARE-VCLOUD-AUTH-CONTEXT header to the specified value
+     */
+    void setAuthContextHeader(String authContext);
 
     /**
      * Represents a query which can be executed against VCD.
@@ -737,3 +785,4 @@ public interface VcdClient extends JaxRsClient {
     <QueryResultClass> Query<QueryResultClass> getPackagedQuery(String packagedQueryPath,
             Class<QueryResultClass> queryResultClass);
 }
+
