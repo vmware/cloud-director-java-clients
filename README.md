@@ -13,4 +13,4 @@ The **cloud-director-java-clients** project team welcomes contributions from the
 ## License
 
 [BSD-2](LICENSE.txt)
-Testing the commit added to readme
+Test the commit added to readme
