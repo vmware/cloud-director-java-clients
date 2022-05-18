@@ -24,11 +24,11 @@
   <properties>
     <object-extensibility.version>1.0.0</object-extensibility.version>
     <cxf.version>3.1.6</cxf.version>
-    <guava.version>19.0</guava.version>
+    <guava.version>31.1-jre</guava.version>
     <jackson-mapper.version>1.9.2</jackson-mapper.version>
     <jax-rs.api.version>2.0.1</jax-rs.api.version>
     <jaxb-impl.version>2.2</jaxb-impl.version>
-    <logback.version>1.1.7</logback.version>
+    <logback.version>1.2.11</logback.version>
     <slf4j.version>1.7.21</slf4j.version>
     <slf4j-simple.version>1.6.4</slf4j-simple.version>
     <spring-amqp.version>1.5.5.RELEASE</spring-amqp.version>
