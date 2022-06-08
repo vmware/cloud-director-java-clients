@@ -8,13 +8,13 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.vmware.vcloud</groupId>
   <artifactId>vcd-ext-sdk-parent</artifactId>
-  <version>0.11.0</version>
+  <version>0.12.0</version>
   <packaging>pom</packaging>
-  <name>${project.artifactId} :: vCloud Director Extension SDKs</name>
-  <description>A collection of libraries for interacting with the extensibility features of vCloud Director.  Also includes some sample application that showcase best practices for extension building</description>
+  <name>${project.artifactId} :: VMware Cloud Director Extension SDKs</name>
+  <description>A collection of libraries for interacting with the extensibility features of VMware Cloud Director. Also includes some sample application that showcase best practices for extension building</description>
   <organization>
     <name>VMware</name>
-    <url>http://www.vmware.com/</url>
+    <url>https://www.vmware.com/</url>
   </organization>
   <modules>
     <module>vcd-api-client-java</module>
@@ -26,12 +26,12 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <java.version>1.8</java.version>
-    <product.version>9.1.0</product.version>
+    <product.version>10.2.2</product.version>
   </properties>
   <licenses>
     <license>
       <name>BSD-2</name>
-      <url>http://www.opensource.org/licenses/BSD-2-Clause</url>
+      <url>https://www.opensource.org/licenses/BSD-2-Clause</url>
     </license>
   </licenses>
   <developers>
@@ -39,7 +39,7 @@
       <id>sjones-vcd</id>
       <name>Steve Jones</name>
       <organization>VMware, Inc.</organization>
-      <organizationUrl>http://www.vmware.com</organizationUrl>
+      <organizationUrl>https://www.vmware.com</organizationUrl>
     </developer>
   </developers>
   <url>https://github.com/vmware/vcd-ext-sdk</url>
