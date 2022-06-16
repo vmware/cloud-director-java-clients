@@ -43,7 +43,7 @@ import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
  *
  * 2. When sending the request, the {@link MultisiteAuthorizationFilter} intercepts the request.
  *
- * 3. The authorization header is crafted using {@link #createMultisiteAuthorizationHeader(String, String, String, String, byte[])
+ * 3. The authorization header is crafted using {@link #createMultisiteAuthorizationHeader(String, String, String, byte[])} 
  *  and inserted by the filter.
  *
  * @since 8.22
@@ -83,7 +83,7 @@ public class VcdMultisiteLoginCredentials implements ClientCredentials {
      *            UserName to login with
      * @param orgName
      *            org to log into
-     * @param privateKey
+     * @param pemEncodedKey
      *            Private key to sign the contents with
      * @throws IOException
      */
@@ -109,7 +109,7 @@ public class VcdMultisiteLoginCredentials implements ClientCredentials {
      *            local Org UUID
      * @param ssoCredentials
      *            User sso credentials for whom the multi-site request is being made
-     * @param privateKey
+     * @param pemEncodedKey
      *            Private key to sign the contents with
      * @throws IOException
      */
@@ -150,8 +150,6 @@ public class VcdMultisiteLoginCredentials implements ClientCredentials {
      *            Rest method
      * @param path
      *            path of the request (e.g. '/cloud/org')
-     * @param host
-     *            Destination of the request
      * @param contentBytes
      *            Byte array of the content
      * @return Authorization header string
@@ -203,7 +201,7 @@ public class VcdMultisiteLoginCredentials implements ClientCredentials {
     /**
      * Creates a digest of the message contents using the specified {@code DIGEST_ALG}
      *
-     * @param message
+     * @param contentBytes
      *            {@link Message} to get the content from
      * @return Base64 encoded digest
      * @throws NoSuchAlgorithmException
