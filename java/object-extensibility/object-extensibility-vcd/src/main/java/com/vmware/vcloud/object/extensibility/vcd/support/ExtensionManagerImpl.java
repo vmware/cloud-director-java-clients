@@ -6,7 +6,7 @@
 package com.vmware.vcloud.object.extensibility.vcd.support;
 
 import com.vmware.vcloud.api.rest.client.VcdClient;
-import com.vmware.vcloud.api.rest.client.constants.RelationType;
+import com.vmware.vcloud.api.rest.constants.RelationType;
 import com.vmware.vcloud.api.rest.schema_v1_5.extension.ObjectExtensionType;
 import com.vmware.vcloud.object.extensibility.vcd.ExtensionManager;
 

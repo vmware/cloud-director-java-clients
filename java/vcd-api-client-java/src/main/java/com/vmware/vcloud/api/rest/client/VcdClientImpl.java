@@ -37,6 +37,10 @@ import javax.ws.rs.core.UriBuilder;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 
+import com.vmware.vcloud.api.rest.constants.RelationType;
+import com.vmware.vcloud.api.rest.constants.RestAdminConstants;
+import com.vmware.vcloud.api.rest.constants.RestConstants;
+import com.vmware.vcloud.api.rest.constants.RestConstants.HttpStatusCodes;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.cxf.jaxrs.client.Client;
@@ -45,10 +49,6 @@ import org.apache.cxf.jaxrs.provider.JAXBElementProvider;
 import org.apache.cxf.jaxrs.provider.JAXBElementTypedProvider;
 
 import com.vmware.cxfrestclient.CxfClientSecurityContext;
-import com.vmware.vcloud.api.rest.client.constants.RelationType;
-import com.vmware.vcloud.api.rest.client.constants.RestAdminConstants;
-import com.vmware.vcloud.api.rest.client.constants.RestConstants;
-import com.vmware.vcloud.api.rest.client.constants.RestConstants.HttpStatusCodes;
 import com.vmware.vcloud.api.rest.client.filters.MultisiteAuthorizationFilter;
 import com.vmware.vcloud.api.rest.client.impl.EventViewerImpl;
 import com.vmware.vcloud.api.rest.client.impl.tasks.VcdTaskMonitorImpl;

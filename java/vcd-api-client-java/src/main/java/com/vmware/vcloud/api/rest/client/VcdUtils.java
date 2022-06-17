@@ -11,7 +11,7 @@ import java.util.List;
 
 import javax.ws.rs.core.UriBuilder;
 
-import com.vmware.vcloud.api.rest.client.constants.RestConstants;
+import com.vmware.vcloud.api.rest.constants.RestConstants;
 import com.vmware.vcloud.api.rest.links.LinkRelation;
 import com.vmware.vcloud.api.rest.schema_v1_5.EntityType;
 import com.vmware.vcloud.api.rest.schema_v1_5.IdentifiableResourceType;

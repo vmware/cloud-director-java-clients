@@ -9,13 +9,13 @@ package com.vmware.vcloud.api.rest.client;
 
 import java.net.URI;
 
+import com.vmware.vcloud.api.rest.constants.RestConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.cxf.jaxrs.client.Client;
 
 import com.vmware.cxfrestclient.AbstractCxfRestClient;
 import com.vmware.cxfrestclient.CxfClientSecurityContext;
 import com.vmware.vcloud.api.rest.client.VcdClient.ClientRequestIdProvider;
-import com.vmware.vcloud.api.rest.client.constants.RestConstants;
 
 /**
  * Base class for all clients that can interact with VCD
@@ -84,7 +84,7 @@ abstract class AbstractVcdClientBase extends AbstractCxfRestClient {
         }
 
         if (getOrgContextHeader() != null) {
-            client.header(RestConstants.VCLOUD_ORG_CONTEXT_HEADER, getOrgContextHeader());
+            client.header(RestConstants.VCLOUD_TENANT_CONTEXT_HEADER, getOrgContextHeader());
         }
     }
 

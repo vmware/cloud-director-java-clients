@@ -7,7 +7,7 @@ package com.vmware.vcloud.api.rest.client;
 
 import java.util.List;
 
-import com.vmware.vcloud.api.rest.client.constants.RestConstants;
+import com.vmware.vcloud.api.rest.constants.RestConstants;
 import com.vmware.vcloud.api.rest.schema_v1_5.EntityType;
 import com.vmware.vcloud.api.rest.schema_v1_5.QueryResultRecordType;
 import com.vmware.vcloud.api.rest.schema_v1_5.ResourceType;

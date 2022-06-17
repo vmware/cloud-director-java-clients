@@ -16,13 +16,13 @@ import java.util.stream.Stream;
 import javax.ws.rs.core.Response;
 import javax.xml.bind.JAXBElement;
 
+import com.vmware.vcloud.api.rest.constants.RelationType;
 import org.apache.cxf.jaxrs.client.Client;
 import org.apache.cxf.jaxrs.ext.search.SearchUtils;
 import org.apache.cxf.jaxrs.ext.search.client.SearchConditionBuilder;
 
 import com.vmware.cxfrestclient.CxfClientSecurityContext;
 import com.vmware.cxfrestclient.JaxRsClient;
-import com.vmware.vcloud.api.rest.client.constants.RelationType;
 import com.vmware.vcloud.api.rest.schema.versioning.SupportedVersionsType;
 import com.vmware.vcloud.api.rest.schema_v1_5.AdminOrgType;
 import com.vmware.vcloud.api.rest.schema_v1_5.ApiExtensibilityType;
