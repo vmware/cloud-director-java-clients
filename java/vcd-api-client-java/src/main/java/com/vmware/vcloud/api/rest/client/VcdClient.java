@@ -1,7 +1,5 @@
 /* ***************************************************************************
- * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
- * SPDX-License-Identifier: BSD-2-Clause
+ * Copyright 2011-2020 VMware, Inc.  All rights reserved. VMware Confidential
  * **************************************************************************/
 
 package com.vmware.vcloud.api.rest.client;
@@ -11,18 +9,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import javax.ws.rs.core.Response;
 import javax.xml.bind.JAXBElement;
 
-import com.vmware.vcloud.api.rest.constants.RelationType;
-import org.apache.cxf.jaxrs.client.Client;
-import org.apache.cxf.jaxrs.ext.search.SearchUtils;
-import org.apache.cxf.jaxrs.ext.search.client.SearchConditionBuilder;
-
 import com.vmware.cxfrestclient.CxfClientSecurityContext;
 import com.vmware.cxfrestclient.JaxRsClient;
+import com.vmware.vcloud.api.rest.constants.RelationType;
+import com.vmware.vcloud.api.rest.constants.RestConstants;
+import com.vmware.vcloud.api.rest.constants.XmlJsonTypeMatcher;
 import com.vmware.vcloud.api.rest.schema.versioning.SupportedVersionsType;
 import com.vmware.vcloud.api.rest.schema_v1_5.AdminOrgType;
 import com.vmware.vcloud.api.rest.schema_v1_5.ApiExtensibilityType;
@@ -36,6 +34,11 @@ import com.vmware.vcloud.api.rest.schema_v1_5.ResourceType;
 import com.vmware.vcloud.api.rest.schema_v1_5.SessionType;
 import com.vmware.vcloud.api.rest.schema_v1_5.VCloudType;
 import com.vmware.vcloud.api.rest.schema_v1_5.extension.VMWExtensionType;
+
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.cxf.jaxrs.client.Client;
+import org.apache.cxf.jaxrs.ext.search.SearchUtils;
+import org.apache.cxf.jaxrs.ext.search.client.SearchConditionBuilder;
 
 /**
  * A vCloud REST API client.  Extends {@link JaxRsClient} with behaviors specific to the vCloud REST API.
@@ -56,19 +59,6 @@ public interface VcdClient extends JaxRsClient {
     }
 
     /**
-     * Returns client request ID to use when making request to VCD.
-     * <p>
-     * The client request ID is never cached and is fetched anew for each request to VCD.
-     */
-    public interface ClientRequestIdProvider {
-
-        /**
-         * @return client request ID to specify in request to VCD
-         */
-        String getClientRequestId();
-    }
-
-    /**
      * An token that can be retrieved from one {@link VcdClient} to attach another {@link VcdClient}
      * to the same session.
      */
@@ -79,6 +69,35 @@ public interface VcdClient extends JaxRsClient {
          */
         String getAuthenticationToken();
     }
+
+    /**
+     *
+     */
+    enum WireFormat {
+        XML(XmlJsonTypeMatcher::getXmlTypeFor),
+        JSON(XmlJsonTypeMatcher::getJsonTypeFor);
+
+        private final Function<String, String> switchToFunction;
+
+        private WireFormat(Function<String, String> switchToFunction) {
+            this.switchToFunction = switchToFunction;
+        }
+
+        @Override
+        public String toString() {
+            return name().toLowerCase();
+        }
+
+        public String switchMediaType(String type) {
+            return ObjectUtils.firstNonNull(switchToFunction.apply(type), type);
+        }
+    };
+
+    /**
+     *
+     * @param wireFormat
+     */
+    void setWireFormat(WireFormat wireFormat);
 
     /**
      * Gets information about the vCloud API versions supported by the server.
@@ -155,7 +174,7 @@ public interface VcdClient extends JaxRsClient {
      *            {@link ClientRequestIdProvider} to use to populate client request ID in requests
      *            to VCD
      */
-    void setClientRequestIdProvider(ClientRequestIdProvider clientRequestIdProvider);
+    void setClientRequestIdProvider(Supplier<String> clientRequestIdProvider);
 
     /**
      * Get the current opaque session token for this client. This can be used to attach a new
@@ -509,10 +528,42 @@ public interface VcdClient extends JaxRsClient {
     EventViewer getEventViewer();
 
     /**
-     * Controls whether requests made with this client request federated behavior or not.
-     * @param federateRequests
+     * Controls whether requests made with this client request multisite behavior or not.
+     *
+     * @param shouldGlobalFanout
+     *            True for global fanout, False for no fanout
+     *
+     * @deprecated This method is deprecated in favor of
+     *             {@link AbstractVcdClientBase#setMultisiteLocations(List)} and
+     *             {@link AbstractVcdClientBase#setMultisiteLocationHeaderValue(String)} which
+     *             provide more control over the same setting
+     *
      */
-    void setMultisiteRequests(boolean federateRequests);
+    @Deprecated
+    void setMultisiteRequests(boolean shouldFanout);
+
+    /**
+     * A string with {@link RestConstants#MULTISITE_ATTR_GLOBAL},
+     * {@link RestConstants#MULTISITE_ATTR_LOCAL}, or a number of locationIds separated by
+     * {@link RestConstants#MULTISITE_ATTR_SEPARATOR}. Pass {@code null} to turn multisite off. Can
+     * also be set by {@link VcdClient#setMultisiteLocations(List)}
+     *
+     */
+    public void setMultisiteLocationHeaderValue(String multisiteLocations);
+
+    /**
+     * Sets the locationIds in the accept header for multisite fanout. Can also be set by
+     * {@link VcdClient#setMultisiteLocationHeaderValue(String)}
+     *
+     * @param multisiteLocations
+     *            List of locationIds or {@code null} to turn multisite off
+     */
+    public void setMultisiteLocations(List<String> multisiteLocations);
+
+    /**
+     * Get the multisite locations (if any) set for this client
+     */
+    public String getMultisiteLocations();
 
     /**
      * Sets the vCloud API authentication header in the specified JAX-RS {@link Client} object
@@ -522,9 +573,14 @@ public interface VcdClient extends JaxRsClient {
     void setAuthenticationHeader(Client client);
 
     /**
-     * Sets the X-VMWARE-VCLOUD-ORG-ID header to the specified value
+     * Sets the X-VMWARE-VCLOUD-TENANT-CONTEXT header to the specified value
      */
-    void setOrgContextHeader(String orgContext);
+    void setTenantContextHeader(String tenantContext);
+
+    /**
+     * Sets the X-VMWARE-VCLOUD-AUTH-CONTEXT header to the specified value
+     */
+    void setAuthContextHeader(String authContext);
 
     /**
      * Represents a query which can be executed against VCD.
@@ -577,7 +633,7 @@ public interface VcdClient extends JaxRsClient {
         /**
          * Sets query filter.
          * <p>
-         * This expects specified filter to be URL encoded. Call to this method will replace an
+         * The specified filter should NOT be URL encoded. Call to this method will replace an
          * existing filter.
          *
          * @param filter

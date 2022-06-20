@@ -1,7 +1,5 @@
 /* **********************************************************************
- * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
- * SPDX-License-Identifier: BSD-2-Clause
+ * Copyright 2013 VMware, Inc.  All rights reserved. VMware Confidential
  * *********************************************************************/
 package com.vmware.vcloud.api.rest.client;
 
@@ -29,4 +27,13 @@ public interface ClientCredentials {
      * @return true if ClientCredentials supports session-less requests
      */
     boolean supportsSessionless();
+
+
+    /**
+     * Indicates whether the ClientCredentials represent a provider user. VCD's cloudapi has
+     * distinct login endpoints for provider and tenant users.
+     */
+    default boolean isProvider() {
+        return false;
+    }
 }

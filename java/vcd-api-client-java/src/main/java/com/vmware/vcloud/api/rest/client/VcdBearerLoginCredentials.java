@@ -1,7 +1,5 @@
 /* *****************************************************************************
- * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
- * SPDX-License-Identifier: BSD-2-Clause
+ * Copyright 2014 VMware, Inc.  All rights reserved. VMware Confidential
  * ****************************************************************************/
 
 package com.vmware.vcloud.api.rest.client;
@@ -43,7 +41,7 @@ public final class VcdBearerLoginCredentials implements ClientCredentials {
 
     @Override
     public boolean supportsSessionless() {
-        return true;
+        return false;
     }
 
 

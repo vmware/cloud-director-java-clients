@@ -7,29 +7,22 @@ package com.vmware.vcloud.api.rest.client;
 import org.apache.cxf.common.util.Base64Utility;
 
 /**
- * Username@Org/password Credentials suitable for use in authenticating with a vCD server using the
- * vCloud API
+ * Username/password Credentials suitable for use in authenticating with a vCD Appliance using the
+ * Appliance API
  */
-public class VcdBasicLoginCredentials implements ClientCredentials {
+public class ApplianceBasicLoginCredentials implements ClientCredentials {
 
     private final String authorizationHeader;
 
-    /**
-     * Construct credentials from a valid vCD organization qualified username  (username@orgname)
-     * and a password.
-     */
-    public VcdBasicLoginCredentials(String userNameAtOrg, String password) {
-        this(userNameAtOrg + ":" + password);
-    }
 
     /**
-     * Construct credentials from a valid vCD user and org names and a password.
+     * Construct credentials from a valid vCD appliance username and a password.
      */
-    public VcdBasicLoginCredentials(String userName, String orgName, String password) {
-        this(userName + "@" + orgName + ":" + password);
+    public ApplianceBasicLoginCredentials(String userName, String password) {
+        this(userName + ":" + password);
     }
 
-    private VcdBasicLoginCredentials(String userString) {
+    private ApplianceBasicLoginCredentials(String userString) {
         authorizationHeader = "Basic " + Base64Utility.encode(userString.getBytes());
     }
 
@@ -55,8 +48,7 @@ public class VcdBasicLoginCredentials implements ClientCredentials {
 
     @Override
     public boolean supportsSessionless() {
-        return false;
+        return true;
     }
-
 
 }
