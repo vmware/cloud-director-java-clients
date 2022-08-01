@@ -32,7 +32,7 @@
     <slf4j.version>1.7.21</slf4j.version>
     <slf4j-simple.version>1.6.4</slf4j-simple.version>
     <spring-amqp.version>2.3.11</spring-amqp.version>
-    <spring-oxm.version>3.1.1.RELEASE</spring-oxm.version>
+    <spring-oxm.version>3.2.4.RELEASE</spring-oxm.version>
     <spring-rabbit.version>1.5.5.RELEASE</spring-rabbit.version>
     <testng.version>6.8.1</testng.version>
     <spring-test.version>3.1.1.RELEASE</spring-test.version>
