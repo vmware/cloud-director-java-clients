@@ -31,7 +31,7 @@
     <logback.version>1.2.11</logback.version>
     <slf4j.version>1.7.21</slf4j.version>
     <slf4j-simple.version>1.6.4</slf4j-simple.version>
-    <spring-amqp.version>1.5.5.RELEASE</spring-amqp.version>
+    <spring-amqp.version>2.3.11</spring-amqp.version>
     <spring-oxm.version>3.1.1.RELEASE</spring-oxm.version>
     <spring-rabbit.version>1.5.5.RELEASE</spring-rabbit.version>
     <testng.version>6.8.1</testng.version>
