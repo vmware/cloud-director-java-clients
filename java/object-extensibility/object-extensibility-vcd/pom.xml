@@ -9,7 +9,7 @@
   <parent>
     <groupId>com.vmware.vcloud</groupId>
     <artifactId>object-extensibility-parent</artifactId>
-    <version>1.0.0</version>
+    <version>9.7</version>
   </parent>
   <artifactId>object-extensibility-vcd</artifactId>
   <name>${project.artifactId} :: Object Extension vCD client</name>
@@ -22,7 +22,7 @@
     <dependency>
       <groupId>com.vmware.vcloud</groupId>
       <artifactId>vcd-api-client-java</artifactId>
-      <version>0.11.0</version>
+      <version>${product.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
