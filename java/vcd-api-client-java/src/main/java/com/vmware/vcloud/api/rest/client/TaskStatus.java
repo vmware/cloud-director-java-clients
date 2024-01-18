@@ -1,7 +1,5 @@
 /* ********************************************************************************
- * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
- * SPDX-License-Identifier: BSD-2-Clause
+ * Copyright 2014 - 2016 VMware, Inc.  All rights reserved. -- VMware Confidential
  * *******************************************************************************/
 
 package com.vmware.vcloud.api.rest.client;
@@ -56,6 +54,8 @@ public enum TaskStatus {
      * The task was canceled.
      */
     CANCELED("canceled");
+
+    public static final TaskStatus[] TERMINAL_STATUSES = new TaskStatus[] { SUCCESS, ABORTED, ERROR, CANCELED };
 
     private static final Map<String, TaskStatus> REVERSE_LOOKUP_MAP;
     static {

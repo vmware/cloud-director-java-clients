@@ -30,56 +30,51 @@
 
 package com.vmware.vcloud.api.rest.client;
 
-import com.vmware.vcloud.api.rest.schema_v1_5.ErrorType;
-import com.vmware.vcloud.api.rest.schema_v1_5.ReferenceType;
+import org.apache.cxf.common.util.Base64Utility;
 
 /**
- * Exception thrown when task failed to complete.
+ * Username/password Credentials suitable for use in authenticating with a vCD Appliance using the
+ * Appliance API
  */
-public class VcdTaskException extends RuntimeException {
+public class ApplianceBasicLoginCredentials implements ClientCredentials {
 
-    private static final long serialVersionUID = 1L;
-    private final ReferenceType owner;
-    private final ErrorType error;
-    private final String errorMessage;
+    private final String authorizationHeader;
 
-    public VcdTaskException(ReferenceType owner, final String errorMessage, final ErrorType error) {
-        this.owner = owner;
-        this.errorMessage = errorMessage;
-        this.error = error;
-    }
-
-    public ReferenceType getOwner() {
-        return owner;
-    }
 
     /**
-     * @return the value of error property.
+     * Construct credentials from a valid vCD appliance username and a password.
      */
-    public ErrorType getError() {
-        return error;
+    public ApplianceBasicLoginCredentials(String userName, String password) {
+        this(userName + ":" + password);
     }
 
-    /**
-     * @return error message.
-     */
-    public String getErrorMessage() {
-        return errorMessage;
+    private ApplianceBasicLoginCredentials(String userString) {
+        authorizationHeader = "Basic " + Base64Utility.encode(userString.getBytes());
     }
 
     @Override
-    public String toString() {
-        return String.format("[VcdTaskException] %s\n" +
-                        "Server stack trace: %s",
-                        getMessage(), (error == null) ? null : error.getStackTrace());
+    public boolean equals(Object obj) {
+        return authorizationHeader.equals(obj);
     }
 
     @Override
-    public String getMessage() {
-        return String.format("VCD Error: %s\n" +
-                        "VCD ErrorType: major error code = %d, minor error code = %s",
-                (error == null) ? null : error.getMessage(),
-                (error == null) ? 0 : error.getMajorErrorCode(),
-                (error == null) ? "-" : error.getMinorErrorCode());
+    public int hashCode() {
+        return authorizationHeader.hashCode();
     }
+
+    @Override
+    public String getHeaderValue() {
+        return authorizationHeader;
+    }
+
+    @Override
+    public String getHeaderName() {
+        return "Authorization";
+    }
+
+    @Override
+    public boolean supportsSessionless() {
+        return true;
+    }
+
 }

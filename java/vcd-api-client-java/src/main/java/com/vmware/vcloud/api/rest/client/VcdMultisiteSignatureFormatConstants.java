@@ -27,27 +27,40 @@
  * #L%
  */
 
+
 package com.vmware.vcloud.api.rest.client;
 
+import java.util.regex.Pattern;
+
 /**
- * An exception to indicate that a query returned more than one record when it was
- * expected to return exactly one record.
+ *
+ * Format information for the multisite signature authentication
+ *
  */
-public class MultipleRecordsException extends RuntimeException {
-    private static final long serialVersionUID = 1L;
+public class VcdMultisiteSignatureFormatConstants {
+    public static final String AUTH_TYPE = "Multisite";
 
-    public MultipleRecordsException() {
-    }
+    public static final Pattern MULTISITE_LOGIN_PATTERN = Pattern.compile("^Multisite (.+)$",
+            Pattern.CASE_INSENSITIVE);
 
-    public MultipleRecordsException(String message) {
-        super(message);
-    }
+    public static final Pattern MULTISITE_SIGNATURE_V1_PATTERN = Pattern
+            .compile("(.+):(.+) (.+); (.+)@(.+)");
+    public static final Pattern MULTISITE_SITNATURE_V2_PATTERN = Pattern
+            .compile("(.+)@(.+) (.+); (.+)@(.+)");
 
-    public MultipleRecordsException(String message, Throwable t) {
-        super(message, t);
-    }
+    public static final Pattern MULTISITE_LOGIN_PATTERN_VERSIONED = Pattern.compile(
+            "^Multisite v:(.+?); (.+)$", Pattern.CASE_INSENSITIVE);
 
-    public MultipleRecordsException(Throwable t) {
-        super(t);
-    }
+    public static final String MULTISITE_UNVERSIONED_HEADER_TEMPLATE = "{0} {1}:{2} {3}; {4}";
+    public static final String MULTISITE_BASIC_AUTH_USERORG_TEMPLATE = "{0}@{1}";
+    public static final String MULTISITE_VERSIONED_HEADER_TEMPLATE = "{0} v:{1}; {2}@{3} {4}; {5}";
+
+    public static final String V1_SIGNING_STRING_TEMPLATE = "(request-target): {0} {1}\n"
+            + "date: {2}\n" + "digest: {3}\n" + "content-length: {4}";
+    public static final String V1_DIGEST_ALG = "SHA-256";
+
+    public static final String V2_SIGNING_STRING_TEMPLATE = "(request-target): {0} {1}\n"
+            + "date: {2}\n" + "content-type: {3}";
+
+    public static final String SIGNATURE_ALGORITHM = "SHA256withRSA";
 }

@@ -30,56 +30,37 @@
 
 package com.vmware.vcloud.api.rest.client;
 
-import com.vmware.vcloud.api.rest.schema_v1_5.ErrorType;
-import com.vmware.vcloud.api.rest.schema_v1_5.ReferenceType;
+import java.util.Objects;
 
 /**
- * Exception thrown when task failed to complete.
+ * Class that wraps a {@link ClientCredentials} implementation
  */
-public class VcdTaskException extends RuntimeException {
+public class CredentialsWrapper implements ClientCredentials {
 
-    private static final long serialVersionUID = 1L;
-    private final ReferenceType owner;
-    private final ErrorType error;
-    private final String errorMessage;
-
-    public VcdTaskException(ReferenceType owner, final String errorMessage, final ErrorType error) {
-        this.owner = owner;
-        this.errorMessage = errorMessage;
-        this.error = error;
-    }
-
-    public ReferenceType getOwner() {
-        return owner;
-    }
+    private final ClientCredentials clientCredentials;
 
     /**
-     * @return the value of error property.
+     * Construct credentials from a valid vCD organization qualified username  (username@orgname)
+     * and a password.
      */
-    public ErrorType getError() {
-        return error;
-    }
-
-    /**
-     * @return error message.
-     */
-    public String getErrorMessage() {
-        return errorMessage;
+    public CredentialsWrapper(final ClientCredentials credentials) {
+        Objects.requireNonNull(credentials, "credentials cannot be null");
+        this.clientCredentials = credentials;
     }
 
     @Override
-    public String toString() {
-        return String.format("[VcdTaskException] %s\n" +
-                        "Server stack trace: %s",
-                        getMessage(), (error == null) ? null : error.getStackTrace());
+    public String getHeaderValue() {
+        return clientCredentials.getHeaderValue();
     }
 
     @Override
-    public String getMessage() {
-        return String.format("VCD Error: %s\n" +
-                        "VCD ErrorType: major error code = %d, minor error code = %s",
-                (error == null) ? null : error.getMessage(),
-                (error == null) ? 0 : error.getMajorErrorCode(),
-                (error == null) ? "-" : error.getMinorErrorCode());
+    public String getHeaderName() {
+        return clientCredentials.getHeaderName();
     }
+
+    @Override
+    public boolean supportsSessionless() {
+        return clientCredentials.supportsSessionless();
+    }
+
 }

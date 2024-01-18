@@ -30,56 +30,37 @@
 
 package com.vmware.vcloud.api.rest.client;
 
-import com.vmware.vcloud.api.rest.schema_v1_5.ErrorType;
-import com.vmware.vcloud.api.rest.schema_v1_5.ReferenceType;
-
 /**
- * Exception thrown when task failed to complete.
+ *
+ * Enum with supported Multisite Signature version.
+ *
  */
-public class VcdTaskException extends RuntimeException {
+public enum MultisiteSignatureVersion {
+    VERSION_1_0("1.0"),
+    VERSION_2_0("2.0"),
 
-    private static final long serialVersionUID = 1L;
-    private final ReferenceType owner;
-    private final ErrorType error;
-    private final String errorMessage;
+    /** Larger than all versions. Keep last! */
+    VERSION_MAX("");
 
-    public VcdTaskException(ReferenceType owner, final String errorMessage, final ErrorType error) {
-        this.owner = owner;
-        this.errorMessage = errorMessage;
-        this.error = error;
-    }
+    private String version;
 
-    public ReferenceType getOwner() {
-        return owner;
+    MultisiteSignatureVersion(final String version) {
+        this.version = version;
     }
 
     /**
-     * @return the value of error property.
+     * @return the version as string
      */
-    public ErrorType getError() {
-        return error;
+    public String value() {
+        return version;
     }
 
-    /**
-     * @return error message.
-     */
-    public String getErrorMessage() {
-        return errorMessage;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("[VcdTaskException] %s\n" +
-                        "Server stack trace: %s",
-                        getMessage(), (error == null) ? null : error.getStackTrace());
-    }
-
-    @Override
-    public String getMessage() {
-        return String.format("VCD Error: %s\n" +
-                        "VCD ErrorType: major error code = %d, minor error code = %s",
-                (error == null) ? null : error.getMessage(),
-                (error == null) ? 0 : error.getMajorErrorCode(),
-                (error == null) ? "-" : error.getMinorErrorCode());
+    public static MultisiteSignatureVersion fromValue(final String value) {
+        for (final MultisiteSignatureVersion v : MultisiteSignatureVersion.values()) {
+            if (v.value().equals(value)) {
+                return v;
+            }
+        }
+        return null;
     }
 }

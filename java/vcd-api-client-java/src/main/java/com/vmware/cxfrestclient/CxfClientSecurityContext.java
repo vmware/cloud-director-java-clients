@@ -1,8 +1,32 @@
-/* *****************************************************************************
- * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
- * SPDX-License-Identifier: BSD-2-Clause
- * ****************************************************************************/
+/*-
+ * #%L
+ * vcd-api-client-java :: Implementation of VCD schemas
+ * %%
+ * Copyright (C) 2022 VMware, Inc.
+ * %%
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * #L%
+ */
+
 
 package com.vmware.cxfrestclient;
 
@@ -68,8 +92,8 @@ public final class CxfClientSecurityContext {
     }
 
     private CxfClientSecurityContext(final KeyManager[] keyManagers, final TrustManager[] trustManagers,
-            final Collection<String> protocols, final Collection<String> ciphers,
-            final boolean enableHostnameVerification) throws GeneralSecurityException {
+                                     final Collection<String> protocols, final Collection<String> ciphers,
+                                     final boolean enableHostnameVerification) throws GeneralSecurityException {
         this.enableHostnameVerification = enableHostnameVerification;
         this.sslSocketFactory = createRestrictedSocketFactory(keyManagers, trustManagers, protocols, ciphers);
     }
@@ -85,7 +109,7 @@ public final class CxfClientSecurityContext {
      * default hostname verifier for https
      */
     public static CxfClientSecurityContext getDefaultCxfClientSecurityContext() {
-            return new CxfClientSecurityContext();
+        return new CxfClientSecurityContext();
     }
 
     /**
@@ -114,8 +138,8 @@ public final class CxfClientSecurityContext {
      *             managers
      */
     public static CxfClientSecurityContext getCxfClientSecurityContext(final KeyStore keystore,
-            final char[] keyPassword, final KeyStore truststore, final Collection<String> ciphers,
-            final boolean enableHostnameVerification) throws GeneralSecurityException {
+                                                                       final char[] keyPassword, final KeyStore truststore, final Collection<String> ciphers,
+                                                                       final boolean enableHostnameVerification) throws GeneralSecurityException {
         return getCxfClientSecurityContext(keystore, keyPassword, truststore,
                 DEFAULT_PROTOCOL_LIST, ciphers, enableHostnameVerification);
     }
@@ -149,8 +173,8 @@ public final class CxfClientSecurityContext {
      *             managers
      */
     public static CxfClientSecurityContext getCxfClientSecurityContext(final KeyStore keystore,
-            final char[] keyPassword, final KeyStore truststore, final Collection<String> protocols,
-            final Collection<String> ciphers, final boolean enableHostnameVerification) throws GeneralSecurityException {
+                                                                       final char[] keyPassword, final KeyStore truststore, final Collection<String> protocols,
+                                                                       final Collection<String> ciphers, final boolean enableHostnameVerification) throws GeneralSecurityException {
         final KeyManager[] keyManagers = getKeyManagers(keystore, keyPassword);
         final TrustManager[] trustManagers = getTrustManagers(truststore);
 
@@ -195,7 +219,7 @@ public final class CxfClientSecurityContext {
         try {
             trustManagerFactory = TrustManagerFactory.getInstance("PKIX");
         } catch (NoSuchAlgorithmException nsae) {
-           throw new AssertionError("Required Trust Manager algorithm PKIX unavailable on this system", nsae);
+            throw new AssertionError("Required Trust Manager algorithm PKIX unavailable on this system", nsae);
         }
         trustManagerFactory.init(truststore);
 
@@ -224,9 +248,9 @@ public final class CxfClientSecurityContext {
 
         final KeyManagerFactory keyManagerFactory;
         try {
-            keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
+            keyManagerFactory = KeyManagerFactory.getInstance("X509");
         } catch (NoSuchAlgorithmException nsae) {
-            throw new AssertionError("Required Key Manager algorithm SunX509 unavailable on this system", nsae);
+            throw new AssertionError("Required Key Manager algorithm X509 unavailable on this system", nsae);
         }
 
         keyManagerFactory.init(keystore, keyPassword);
@@ -251,13 +275,15 @@ public final class CxfClientSecurityContext {
             } else if (javaMajorVersion == 7) {
                 return "TLSv1.2";
             }
+        } else if (Integer.parseInt(versionParts[0]) >= 8) {
+            return "TLS";
         }
         throw new UnsupportedOperationException("Java version " + javaVersionStr + " is not supported." +
-                                                " Java 1.7 or later required");
+                " Java 1.7 or later required");
     }
 
     private SSLSocketFactory createRestrictedSocketFactory(final KeyManager[] keyManagers, final TrustManager[] trustManagers,
-            final Collection<String> protocols, final Collection<String> ciphers) throws GeneralSecurityException {
+                                                           final Collection<String> protocols, final Collection<String> ciphers) throws GeneralSecurityException {
         final SSLContext restrictedSSLContext;
         restrictedSSLContext = SSLContext.getInstance(getTLSVersionForJava());
         restrictedSSLContext.init(keyManagers, trustManagers, new SecureRandom());
@@ -279,15 +305,15 @@ public final class CxfClientSecurityContext {
         }
         CxfClientSecurityContext other = (CxfClientSecurityContext) obj;
         return Objects.equals(enableHostnameVerification, other.enableHostnameVerification) &&
-               Objects.equals(sslSocketFactory, other.sslSocketFactory);
+                Objects.equals(sslSocketFactory, other.sslSocketFactory);
     }
 
     @Override
     public String toString() {
         return String
                 .format("[CxfClientSecurityContext] " +
-                        "SSLSocketFactory = %s,\n" +
-                        "Hostname verification is %s.",
+                                "SSLSocketFactory = %s,\n" +
+                                "Hostname verification is %s.",
                         sslSocketFactory,
                         enableHostnameVerification ? "enabled" : "disabled");
     }
@@ -305,7 +331,7 @@ public final class CxfClientSecurityContext {
         private final String[] ciphers;
 
         public RestrictedSSLSocketFactory(final SSLSocketFactory sslSocketFactory,
-                final Collection<String> protocols, final Collection<String> ciphers) {
+                                          final Collection<String> protocols, final Collection<String> ciphers) {
             this.sslSocketFactory = sslSocketFactory;
             this.protocols = (protocols == null) ? null : new HashSet<>(protocols);
             this.ciphers = intersectionOf(ciphers, sslSocketFactory.getSupportedCipherSuites());
@@ -319,6 +345,11 @@ public final class CxfClientSecurityContext {
         @Override
         public String[] getSupportedCipherSuites() {
             return ciphers;
+        }
+
+        @Override
+        public Socket createSocket() throws IOException {
+            return restrict((SSLSocket) sslSocketFactory.createSocket());
         }
 
         @Override
@@ -345,7 +376,7 @@ public final class CxfClientSecurityContext {
 
         @Override
         public Socket createSocket(InetAddress address, int port, InetAddress localAddress,
-                int localPort) throws IOException {
+                                   int localPort) throws IOException {
             return restrict((SSLSocket) sslSocketFactory.createSocket(address, port, localAddress, localPort));
         }
 
