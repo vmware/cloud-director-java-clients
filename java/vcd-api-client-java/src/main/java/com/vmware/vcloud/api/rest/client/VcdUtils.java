@@ -1,9 +1,33 @@
-/* **********************************************************************
- * api-extension-template-vcloud-director
- * Copyright 2018 VMware, Inc.
- * SPDX-License-Identifier: BSD-2-Clause
- * *********************************************************************/
 package com.vmware.vcloud.api.rest.client;
+
+/*-
+ * #%L
+ * vcd-api-client-java :: vCloud Director REST Client
+ * %%
+ * Copyright (C) 2018 - 2021 VMware
+ * %%
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * #L%
+ */
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -11,11 +35,12 @@ import java.util.List;
 
 import javax.ws.rs.core.UriBuilder;
 
-import com.vmware.vcloud.api.rest.client.constants.RestConstants;
+import com.vmware.vcloud.api.rest.constants.RestConstants;
 import com.vmware.vcloud.api.rest.links.LinkRelation;
 import com.vmware.vcloud.api.rest.schema_v1_5.EntityType;
 import com.vmware.vcloud.api.rest.schema_v1_5.IdentifiableResourceType;
 import com.vmware.vcloud.api.rest.schema_v1_5.LinkType;
+import com.vmware.vcloud.api.rest.schema_v1_5.QueryResultRecordType;
 import com.vmware.vcloud.api.rest.schema_v1_5.ReferenceType;
 import com.vmware.vcloud.api.rest.schema_v1_5.ResourceType;
 import com.vmware.vcloud.api.rest.schema_v1_5.TaskType;
@@ -96,20 +121,65 @@ public class VcdUtils {
      * @throws MissingLinkException if no link of the specified rel and media type is found
      * @throws MultipleLinksException if multiple links of the specified rel and media type are found
      */
-    public static LinkType findLink(ResourceType resource, LinkRelation rel, String mediaType, boolean failIfAbsent) throws MissingLinkException, MultipleLinksException {
-        List<LinkType> links = getLinks(resource, rel, mediaType);
+    public static LinkType findLink(final ResourceType resource,
+            final LinkRelation rel,
+            final String mediaType,
+            final boolean failIfAbsent) throws MissingLinkException, MultipleLinksException {
+        final List<LinkType> links = getLinks(resource, rel, mediaType);
+        return findLink(links, rel, mediaType, resource.getHref(), failIfAbsent);
+    }
+
+    /**
+     * Returns the link of the specified rel and type in the specified {@link QueryResultRecordType}
+     * @param query record resourcee with the link
+     * @param rel the rel of the desired link
+     * @param mediaType media type of content
+     * @param failIfAbsent controls whether an exception is thrown if there's not exactly one link of the specified rel and media type
+     * @return the link, or null if no such link is present and failIfAbsent is false
+     * @throws MissingLinkException if no link of the specified rel and media type is found
+     * @throws MultipleLinksException if multiple links of the specified rel and media type are found
+     */
+    public static LinkType findLink(final QueryResultRecordType resource,
+            final LinkRelation rel,
+            final String mediaType,
+            final boolean failIfAbsent) throws MissingLinkException, MultipleLinksException {
+        final List<LinkType> links = getLinks(resource, rel, mediaType);
+        return findLink(links, rel, mediaType, resource.getHref(), failIfAbsent);
+    }
+
+    private static LinkType findLink(final List<LinkType> links,
+            final LinkRelation rel,
+            final String mediaType,
+            final String href,
+            final boolean failIfAbsent) throws MissingLinkException, MultipleLinksException {
         switch (links.size()) {
         case 0:
             if (failIfAbsent) {
-                throw new MissingLinkException(resource.getHref(), rel, mediaType);
+                throw new MissingLinkException(href, rel, mediaType);
             } else {
                 return null;
             }
         case 1:
             return links.get(0);
         default:
-            throw new MultipleLinksException(resource.getHref(), rel, mediaType);
+            throw new MultipleLinksException(href, rel, mediaType);
         }
+    }
+
+    /**
+     * Returns the link of the specified type in the specified list of links
+     *
+     * @param link List of links
+     * @param mediaType The media type to look for
+     * @return the link, or null if no such link
+     */
+    public static LinkType findLink(List<LinkType> links, String mediaType) {
+        for (LinkType link : links) {
+            if (mediaType.equals(link.getType())) {
+                return link;
+            }
+        }
+        return null;
     }
 
     /**
@@ -119,30 +189,53 @@ public class VcdUtils {
      * @param mediaType media type of content
      * @return the links (could be an empty list)
      */
-    public static List<LinkType> getLinks(ResourceType resource, LinkRelation rel, String mediaType) {
-        List<LinkType> links = new ArrayList<LinkType>();
-        for (LinkType link : resource.getLink()) {
+    public static List<LinkType> getLinks(final ResourceType resource,
+            final LinkRelation rel,
+            final String mediaType) {
+        return getLinksForRelAndMediaType(resource.getLink(), rel, mediaType);
+    }
 
+    /**
+     * Returns all the links of the specified rel and type in the specified {@link QueryResultRecordType}
+     * @param resource the resource with the link
+     * @param rel the rel of the desired link
+     * @param mediaType media type of content
+     * @return the links (could be an empty list)
+     */
+    public static List<LinkType> getLinks(final QueryResultRecordType resource,
+            final LinkRelation rel,
+            final String mediaType) {
+        return getLinksForRelAndMediaType(resource.getLink(), rel, mediaType);
+    }
+
+    private static List<LinkType> getLinksForRelAndMediaType(final List<LinkType> links,
+            final LinkRelation rel,
+            final String mediaType) {
+        final List<LinkType> filteredLinks = new ArrayList<>();
+        for (LinkType link : links) {
             try {
                 if (link.getRel().equals(rel.value())) {
                     if (mediaType == null && link.getType() == null) {
-                        links.add(link);
+                        filteredLinks.add(link);
                     } else if (mediaType != null && link.getType().equals(mediaType)) {
-                        links.add(link);
+                        filteredLinks.add(link);
                     }
                 }
             } catch (IllegalArgumentException e) {
                 // See comment in corresponding catch in findLink().
             }
         }
-        return links;
+        return filteredLinks;
     }
 
     /**
      * Convenience method to turn a {@link ResourceType} into a {@link ReferenceType} to that resource.
      */
     public static ReferenceType makeRef(ResourceType resource) {
-        ReferenceType ref = new ReferenceType();
+        if (resource == null) {
+            return null;
+        }
+        final ReferenceType ref = new ReferenceType();
         ref.setHref(resource.getHref());
         ref.setType(resource.getType());
         return ref;
@@ -152,7 +245,10 @@ public class VcdUtils {
      * Convenience method to turn an {@link IdentifiableResourceType} into a {@link ReferenceType} to that resource.
      */
     public static ReferenceType makeRef(IdentifiableResourceType identifiableResource) {
-        ReferenceType ref = makeRef((ResourceType) identifiableResource);
+        final ReferenceType ref = makeRef((ResourceType) identifiableResource);
+        if (ref == null) {
+            return null;
+        }
         ref.setId(identifiableResource.getId());
         return ref;
     }
@@ -161,7 +257,10 @@ public class VcdUtils {
      * Convenience method to turn an {@link EntityType} into a {@link ReferenceType} to that entity.
      */
     public static ReferenceType makeRef(EntityType entity) {
-        ReferenceType ref = makeRef((IdentifiableResourceType) entity);
+        final ReferenceType ref = makeRef((IdentifiableResourceType) entity);
+        if (ref == null) {
+            return null;
+        }
         ref.setName(entity.getName());
         return ref;
     }
@@ -204,3 +303,4 @@ public class VcdUtils {
         return taskList.get(0);
     }
 }
+
